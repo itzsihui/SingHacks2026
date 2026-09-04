@@ -13,7 +13,7 @@ export function renderLlmsTxt(store: StoreRecord, origin: string) {
 > AI-native storefront on the Agentic Storefront Protocol (Borneo).
 > Humans use a GUI. Agents use this file.
 
-This store sells in ${config.tokenSymbol} on Base (${config.network}).
+This store sells in ${config.tokenSymbol} on XRPL (${config.network}).
 Do not scrape HTML. Do not open a checkout page.
 
 ## For agents
@@ -32,7 +32,7 @@ Do not scrape HTML. Do not open a checkout page.
 ## Checkout rails
 - Rail A x402: POST ${base}/buy
   - Expect HTTP 402 Payment Required with PAYMENT-REQUIRED.
-  - Pay exact amount in ${config.tokenSymbol} on Base Sepolia to the merchant address, then retry with PAYMENT-SIGNATURE (tx hash).
+  - Pay exact amount in ${config.tokenSymbol} on XRPL Testnet to the merchant classic address, then retry with PAYMENT-SIGNATURE (presigned Payment blob).
 - Rail B Visa (agent-authorized card): POST ${base}/checkout
   - Issue a one-time scoped virtual card (spend cap, merchant whitelist, expiry).
   - Burn the card after success.
@@ -44,7 +44,8 @@ Do not scrape HTML. Do not open a checkout page.
 - Token: ${config.tokenSymbol}
 - Decimals: ${config.tokenDecimals}
 - Asset: ${config.tokenAddress}
-- Network: ${config.network} (chain ${config.chainId})
+- Issuer: ${config.tokenIssuer}
+- Network: ${config.network}
 - Merchant payTo: ${store.merchantAddress}
 `;
 }

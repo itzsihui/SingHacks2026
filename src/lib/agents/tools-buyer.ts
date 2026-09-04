@@ -1,18 +1,11 @@
+import { Wallet } from "xrpl";
 import {
-  createWalletClient,
-  http,
-  publicActions,
-  parseAbi,
-} from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { baseSepolia } from "viem/chains";
+  XRPLPresignedPaymentPayer,
+  type PaymentRequirements,
+} from "x402-xrpl";
 import { resolveBuyerTarget } from "@/lib/agents/discover";
-import { config, explorerTx, toAtomic } from "@/lib/config";
+import { config, explorerTx, toAtomic, toPaymentAmount } from "@/lib/config";
 import { emit } from "@/lib/protocol/events";
-
-const erc20 = parseAbi([
-  "function transfer(address to, uint256 amount) returns (bool)",
-]);
 
 export type BuyerStep = {
   type: "info" | "http" | "chain" | "error" | "success";
@@ -34,13 +27,13 @@ export type PayQuote = {
   storeSlug: string;
   skuId: string;
   price: string;
-  merchantAddress?: `0x${string}`;
+  merchantAddress?: string;
 };
 
 export { extractRequestedProduct } from "@/lib/agents/discover";
 
 /**
- * Deterministic x402 handshake.
+ * Deterministic x402 handshake on XRPL Testnet (RLUSD).
  * Prefer a locked quote (slug+skuId+price). Fuzzy message/product matching
  * remains only for legacy demo paths without a quote.
  */
@@ -84,14 +77,12 @@ export async function payX402Tool(args: {
   const { slug, sku, via, merchantAddress } = resolved;
   const base = `${args.origin}/s/${slug}`;
   const expectedPrice = quote?.price || sku.price;
-  const expectedPayTo = (
-    quote?.merchantAddress || merchantAddress
-  ).toLowerCase() as `0x${string}`;
+  const expectedPayTo = (quote?.merchantAddress || merchantAddress).trim();
 
   if (via === "quote") {
     steps.push({
       type: "info",
-      text: `Capability lock → /s/${slug} · sku ${sku.id} · ${expectedPrice} USDC`,
+      text: `Capability lock → /s/${slug} · sku ${sku.id} · ${expectedPrice} ${config.tokenSymbol}`,
     });
   } else if (via === "registry") {
     steps.push({
@@ -107,7 +98,6 @@ export async function payX402Tool(args: {
     });
   }
 
-  // Discovery probes — status only; never echo catalog / llms body (injection surface)
   steps.push({ type: "info", text: `Discovering ${base}/llms.txt` });
   const llms = await fetch(`${base}/llms.txt`);
   steps.push({
@@ -135,10 +125,8 @@ export async function payX402Tool(args: {
     }),
   });
   const challenge = (await first.json()) as {
-    accepts?: Array<{
-      maxAmountRequired: string;
-      payTo: `0x${string}`;
-    }>;
+    accepts?: PaymentRequirements[];
+    error?: string;
   };
   steps.push({
     type: "http",
@@ -156,9 +144,7 @@ export async function payX402Tool(args: {
     return { steps };
   }
 
-  // Capability checks: 402 offer must match the locked quote
-  const offerPayTo = accept.payTo.toLowerCase();
-  if (offerPayTo !== expectedPayTo) {
+  if (accept.payTo.trim() !== expectedPayTo) {
     steps.push({
       type: "error",
       text: `Capability check failed: 402 payTo ${accept.payTo} does not match locked merchant ${expectedPayTo}`,
@@ -166,8 +152,10 @@ export async function payX402Tool(args: {
     return { steps };
   }
 
+  let expectedAmount: string;
   let expectedAtomic: string;
   try {
+    expectedAmount = toPaymentAmount(expectedPrice);
     expectedAtomic = toAtomic(expectedPrice);
   } catch {
     steps.push({
@@ -177,10 +165,11 @@ export async function payX402Tool(args: {
     return { steps };
   }
 
-  if (accept.maxAmountRequired !== expectedAtomic) {
+  const offerAtomic = toAtomic(accept.amount);
+  if (offerAtomic !== expectedAtomic) {
     steps.push({
       type: "error",
-      text: `Capability check failed: 402 amount ${accept.maxAmountRequired} does not match locked price ${expectedPrice} USDC (${expectedAtomic} atomic)`,
+      text: `Capability check failed: 402 amount ${accept.amount} does not match locked price ${expectedPrice} ${config.tokenSymbol} (${expectedAmount})`,
     });
     return { steps };
   }
@@ -190,7 +179,7 @@ export async function payX402Tool(args: {
     text: "Capability checks passed: payTo + amount match locked quote",
   });
 
-  if (!config.buyerPrivateKey) {
+  if (!config.buyerSeed) {
     emit({
       status: 402,
       method: "POST",
@@ -198,38 +187,42 @@ export async function payX402Tool(args: {
       store: slug,
       orderId,
       rail: "x402",
-      message: "402 unpaid: BUYER_PRIVATE_KEY missing, cannot sign on Base Sepolia",
+      message: "402 unpaid: XRPL_BUYER_SEED missing, cannot sign on XRPL Testnet",
     });
     steps.push({
       type: "error",
-      text: `402 is the challenge. Add BUYER_PRIVATE_KEY + funded ${config.tokenSymbol} on Base Sepolia, then Buy again.`,
+      text: `402 is the challenge. Add XRPL_BUYER_SEED + funded ${config.tokenSymbol} (trust line) on XRPL Testnet, then Buy again.`,
     });
     return { steps, receipt: challenge as BuyerReceipt };
   }
 
-  const account = privateKeyToAccount(config.buyerPrivateKey);
-  const wallet = createWalletClient({
-    account,
-    chain: baseSepolia,
-    transport: http(config.rpcUrl),
-  }).extend(publicActions);
+  let wallet: Wallet;
+  try {
+    wallet = Wallet.fromSeed(config.buyerSeed);
+  } catch {
+    steps.push({ type: "error", text: "Invalid XRPL_BUYER_SEED" });
+    return { steps, receipt: challenge as BuyerReceipt };
+  }
 
   steps.push({
     type: "chain",
-    text: `Signing ${config.tokenSymbol} transfer ${accept.maxAmountRequired} → ${accept.payTo} on Base Sepolia`,
+    text: `Signing ${config.tokenSymbol} Payment ${accept.amount} → ${accept.payTo} on XRPL Testnet (${wallet.classicAddress})`,
   });
-  let txHash: `0x${string}`;
+
+  let paymentHeader: string;
   try {
-    txHash = await wallet.writeContract({
-      address: config.tokenAddress,
-      abi: erc20,
-      functionName: "transfer",
-      args: [accept.payTo, BigInt(accept.maxAmountRequired)],
-      gas: 150_000n,
+    const payer = new XRPLPresignedPaymentPayer({
+      wallet,
+      network: config.network === "xrpl:0" || config.network === "xrpl:2"
+        ? config.network
+        : "xrpl:1",
+      wsUrl: config.wsUrl,
+      invoiceBinding: "memos",
     });
-    await wallet.waitForTransactionReceipt({ hash: txHash });
+    const prepared = await payer.preparePayment(accept);
+    paymentHeader = prepared.paymentHeader;
   } catch (error) {
-    const reason = error instanceof Error ? error.message : "transfer failed";
+    const reason = error instanceof Error ? error.message : "sign failed";
     emit({
       status: 402,
       method: "POST",
@@ -242,16 +235,14 @@ export async function payX402Tool(args: {
     steps.push({ type: "error", text: reason });
     return { steps, receipt: challenge as BuyerReceipt };
   }
-  const snowtrace = explorerTx(txHash);
-  steps.push({ type: "chain", text: `Settled ${txHash}` });
-  steps.push({ type: "success", text: snowtrace });
 
-  const signature = Buffer.from(JSON.stringify({ txHash })).toString("base64");
+  steps.push({ type: "chain", text: "Presigned Payment blob ready" });
+
   const second = await fetch(`${base}/buy`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "PAYMENT-SIGNATURE": signature,
+      "PAYMENT-SIGNATURE": paymentHeader,
     },
     body: JSON.stringify({
       skuId: sku.id,
@@ -272,12 +263,11 @@ export async function payX402Tool(args: {
     });
     return {
       steps,
-      receipt: { txHash, explorerUrl: snowtrace, status: "verify-failed" },
+      receipt: { status: "verify-failed" },
     };
   }
-  if (!receipt.explorerUrl && txHash) {
-    receipt.explorerUrl = snowtrace;
-    receipt.txHash = txHash;
+  if (receipt.txHash && !receipt.explorerUrl) {
+    receipt.explorerUrl = explorerTx(String(receipt.txHash));
   }
   steps.push({
     type: second.ok ? "success" : "error",
@@ -285,6 +275,8 @@ export async function payX402Tool(args: {
   });
   if (second.ok && receipt.explorerUrl) {
     steps.push({ type: "success", text: receipt.explorerUrl });
+  } else if (second.ok && receipt.txHash) {
+    steps.push({ type: "success", text: explorerTx(String(receipt.txHash)) });
   }
   return { steps, receipt };
 }

@@ -17,19 +17,19 @@ export default function DemoPage() {
       text: "90s script: merchant publish → x402 402→200 → VISA card rail. Open /onboard and /buyer for interactive panes.",
     },
   ]);
-  const [snowtrace, setSnowtrace] = useState<string | null>(null);
+  const [explorerUrl, setExplorerUrl] = useState<string | null>(null);
 
   async function runFullScript() {
     setBusy(true);
     setLog([{ role: "gateway", text: "One-click script started…" }]);
-    setSnowtrace(null);
+    setExplorerUrl(null);
     try {
       const res = await fetch("/api/demo-script", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           merchantMessage:
-            "Create a store. I'm selling 50 VISA Hackathon Shirts for 0.01 XSGD each.",
+            "Create a store. I'm selling 50 VISA Hackathon Shirts for 0.01 RLUSD each.",
           buyerMessage:
             "Agent, go to /s/hackathon-shirts and buy a hackathon shirt.",
           rails: ["x402", "card"],
@@ -38,8 +38,9 @@ export default function DemoPage() {
       const data = (await res.json()) as {
         log?: Array<{ phase: string; text: string }>;
         snowtrace?: string | null;
+        explorerUrl?: string | null;
         error?: string;
-        pitch?: { avalanche?: string; straitsx?: string; aws?: string };
+        pitch?: { avalanche?: string; xrpl?: string; straitsx?: string; aws?: string };
       };
       if (!res.ok) {
         throw new Error(data.error || `HTTP ${res.status}`);
@@ -50,11 +51,15 @@ export default function DemoPage() {
           text: l.text,
         })),
       );
-      if (data.snowtrace) setSnowtrace(data.snowtrace);
+      const link = data.explorerUrl || data.snowtrace;
+      if (link) setExplorerUrl(link);
       if (data.pitch) {
         setLog((prev) => [
           ...prev,
-          { role: "pitch", text: `Avalanche: ${data.pitch?.avalanche}` },
+          {
+            role: "pitch",
+            text: `XRPL: ${data.pitch?.xrpl || data.pitch?.avalanche}`,
+          },
           { role: "pitch", text: `VISA: ${data.pitch?.straitsx}` },
           { role: "pitch", text: `AWS: ${data.pitch?.aws}` },
         ]);
@@ -111,16 +116,16 @@ export default function DemoPage() {
           </div>
         </div>
 
-        {snowtrace ? (
+        {explorerUrl ? (
           <p className="mt-4 text-sm">
-            Snowtrace:{" "}
+            XRPL explorer:{" "}
             <a
               className="text-primary underline-offset-4 hover:underline"
-              href={snowtrace}
+              href={explorerUrl}
               target="_blank"
               rel="noreferrer"
             >
-              {snowtrace}
+              {explorerUrl}
             </a>
           </p>
         ) : null}

@@ -51,7 +51,7 @@ export function InteractiveCheckout({
   onClear,
   onCheckout,
   onProductClick,
-  currency = "USDC",
+  currency = "RLUSD",
   checkoutLabel = "Pay in chat",
   busy,
   className,

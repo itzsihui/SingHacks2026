@@ -88,7 +88,7 @@ export function CartPayModal({
                   </p>
                 </div>
                 <p className="shrink-0 text-sm font-medium tabular-nums">
-                  {(Number(line.price) * line.quantity).toFixed(2)} USDC
+                  {(Number(line.price) * line.quantity).toFixed(2)} RLUSD
                 </p>
               </li>
             ))}
@@ -126,9 +126,9 @@ export function CartPayModal({
                     : "border-border hover:border-foreground/40",
                 )}
               >
-                <span className="font-medium">USDC · x402</span>
+                <span className="font-medium">RLUSD · x402</span>
                 <span className="mt-0.5 block text-xs text-foreground/55">
-                  Base Sepolia per locked quote
+                  XRPL Testnet per locked quote
                 </span>
               </button>
             </div>
@@ -139,7 +139,7 @@ export function CartPayModal({
               Locked quotes
             </p>
             <p className="mt-2 text-[12px] text-foreground/60">
-              Total <strong>{total.toFixed(2)} USDC</strong> across{" "}
+              Total <strong>{total.toFixed(2)} RLUSD</strong> across{" "}
               {stores.length} store{stores.length === 1 ? "" : "s"}. Hostile
               catalog titles cannot change payee, amount, or skip authorize on
               any line.
@@ -184,7 +184,7 @@ export function CartPayModal({
             {busy
               ? isVisa
                 ? "Paying Visa…"
-                : "Paying USDC…"
+                : "Paying RLUSD…"
               : `Authorize ${lines.length} settle${lines.length === 1 ? "" : "s"}`}
           </Button>
         </div>

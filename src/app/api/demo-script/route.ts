@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 /**
  * One-click AgentiX lifecycle for judges:
- * onboard → Avalanche x402 → VISA card rail.
+ * onboard → XRPL x402 → VISA card rail.
  */
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
@@ -71,7 +71,8 @@ export async function POST(request: Request) {
   return Response.json({
     ok: true,
     pitch: {
-      avalanche: "HTTP 402 → XSGD on Avalanche → PAYMENT-SIGNATURE → 200",
+      avalanche: "HTTP 402 → RLUSD on XRPL Testnet → PAYMENT-SIGNATURE → 200",
+      xrpl: "HTTP 402 → RLUSD on XRPL Testnet → facilitator settle → 200",
       straitsx: "Scoped virtual card mandate → checkout → burn",
       aws: "Bedrock agents + API Gateway/Lambda/DynamoDB protocol slice",
     },
@@ -80,5 +81,6 @@ export async function POST(request: Request) {
     card,
     log,
     snowtrace: x402?.receipt?.explorerUrl ?? null,
+    explorerUrl: x402?.receipt?.explorerUrl ?? null,
   });
 }

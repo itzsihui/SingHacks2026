@@ -12,9 +12,10 @@ import {
   type MerchantGovernance,
 } from "@/lib/firebase/merchant-auth";
 import {
-  authenticateWithMetaMask,
+  authenticateWithXrplSeed,
+  generateMerchantWallet,
   shortAddress,
-} from "@/lib/wallet/ethereum";
+} from "@/lib/wallet/xrpl";
 
 export default function MerchantSetupPage() {
   const router = useRouter();
@@ -31,7 +32,9 @@ export default function MerchantSetupPage() {
   const [requireConfirm, setRequireConfirm] = useState(true);
   const [busy, setBusy] = useState(false);
   const [walletBusy, setWalletBusy] = useState(false);
-  const [boundWallet, setBoundWallet] = useState<`0x${string}` | null>(null);
+  const [boundWallet, setBoundWallet] = useState<string | null>(null);
+  const [seedInput, setSeedInput] = useState("");
+  const [generatedSeed, setGeneratedSeed] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -71,15 +74,25 @@ export default function MerchantSetupPage() {
     setWalletBusy(true);
     setError(null);
     try {
-      const proof = await authenticateWithMetaMask();
+      const proof = authenticateWithXrplSeed(seedInput);
       await merchant.bindWallet(proof.address);
       setBoundWallet(proof.address);
-      setMessage(`Crypto receive bound: ${shortAddress(proof.address)}`);
+      setSeedInput("");
+      setMessage(`XRPL receive bound: ${shortAddress(proof.address)}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "MetaMask bind failed");
+      setError(err instanceof Error ? err.message : "XRPL bind failed");
     } finally {
       setWalletBusy(false);
     }
+  }
+
+  function onGenerateWallet() {
+    const w = generateMerchantWallet();
+    setGeneratedSeed(w.seed);
+    setSeedInput(w.seed);
+    setMessage(
+      `Generated ${shortAddress(w.address)}. Copy the seed, fund Testnet XRP + RLUSD trust line, then Bind.`,
+    );
   }
 
   async function onSave(e: FormEvent) {
@@ -89,11 +102,11 @@ export default function MerchantSetupPage() {
       return;
     }
     if (!acceptUsdc && !acceptVisa) {
-      setError("Enable at least one payment rail (USDC or Visa)");
+      setError("Enable at least one payment rail (RLUSD or Visa)");
       return;
     }
     if (!wallet) {
-      setError("Bind your MetaMask receiving wallet before continuing");
+      setError("Bind your XRPL receiving address before continuing");
       return;
     }
     setBusy(true);
@@ -206,10 +219,11 @@ export default function MerchantSetupPage() {
 
       <form onSubmit={(e) => void onSave(e)} className="mt-8 space-y-10">
         <section className="space-y-3">
-          <h2 className="text-sm font-medium">1. Crypto receiving wallet</h2>
+          <h2 className="text-sm font-medium">1. XRPL receiving address</h2>
           <p className="text-xs text-foreground/55">
-            USDC / x402 settlements land here (Base Sepolia). Bind once —
-            Publish only uses this when going live.
+            RLUSD / x402 settlements land here (XRPL Testnet classic r…
+            address). Paste a family seed to prove ownership — the seed stays in
+            your browser.
           </p>
           {wallet ? (
             <p className="font-mono text-sm">
@@ -221,19 +235,43 @@ export default function MerchantSetupPage() {
           ) : (
             <p className="text-sm text-muted-foreground">Not bound yet</p>
           )}
-          <Button
-            type="button"
-            variant="outline"
-            disabled={walletBusy}
-            onClick={() => void onBindWallet()}
-            className="h-10"
-          >
-            {walletBusy
-              ? "Waiting for MetaMask…"
-              : wallet
-                ? "Re-bind MetaMask"
-                : "Bind MetaMask"}
-          </Button>
+          <Input
+            type="password"
+            value={seedInput}
+            onChange={(e) => setSeedInput(e.target.value)}
+            placeholder="XRPL family seed (s…)"
+            className="h-10 font-mono text-sm"
+            autoComplete="off"
+          />
+          {generatedSeed ? (
+            <p className="break-all rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-[10px] text-foreground/70">
+              Save this seed offline: {generatedSeed}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={walletBusy || !seedInput.trim()}
+              onClick={() => void onBindWallet()}
+              className="h-10"
+            >
+              {walletBusy
+                ? "Binding…"
+                : wallet
+                  ? "Re-bind XRPL wallet"
+                  : "Bind XRPL wallet"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={walletBusy}
+              onClick={onGenerateWallet}
+              className="h-10"
+            >
+              Generate testnet wallet
+            </Button>
+          </div>
         </section>
 
         <section className="space-y-3">
@@ -279,9 +317,9 @@ export default function MerchantSetupPage() {
               onChange={(e) => setAcceptUsdc(e.target.checked)}
             />
             <span>
-              Accept USDC (x402)
+              Accept RLUSD (x402)
               <span className="mt-0.5 block text-xs text-foreground/50">
-                Buyer agents can settle on-chain to your wallet.
+                Buyer agents can settle on XRPL Testnet to your classic address.
               </span>
             </span>
           </label>
@@ -324,7 +362,7 @@ export default function MerchantSetupPage() {
             <span>
               Require price confirm before publish
               <span className="mt-0.5 block text-xs text-foreground/50">
-                The merchant agent drafts inventory but you approve USDC prices
+                The merchant agent drafts inventory but you approve RLUSD prices
                 before go-live.
               </span>
             </span>
@@ -333,7 +371,7 @@ export default function MerchantSetupPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label htmlFor="minPrice" className="text-xs font-medium">
-                Min unit price (USDC)
+                Min unit price (RLUSD)
               </label>
               <Input
                 id="minPrice"

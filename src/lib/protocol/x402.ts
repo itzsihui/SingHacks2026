@@ -1,28 +1,21 @@
-import { createPublicClient, decodeEventLog, http, parseAbiItem } from "viem";
-import { baseSepolia } from "viem/chains";
-import { config, explorerTx, toAtomic } from "@/lib/config";
+import {
+  FacilitatorClient,
+  encodePaymentRequiredHeader,
+  decodePaymentSignatureHeader,
+  type PaymentPayload,
+  type PaymentRequired,
+  type PaymentRequirements,
+} from "x402-xrpl";
+import {
+  config,
+  explorerTx,
+  toAtomic,
+  toPaymentAmount,
+  XRPL_SOURCE_TAG,
+} from "@/lib/config";
 import type { Sku, StoreRecord } from "@/lib/store/types";
 
-const transferEvent = parseAbiItem(
-  "event Transfer(address indexed from, address indexed to, uint256 value)",
-);
-
-export type PaymentRequired = {
-  x402Version: 1;
-  accepts: Array<{
-    scheme: "exact";
-    network: string;
-    maxAmountRequired: string;
-    resource: string;
-    description: string;
-    mimeType: string;
-    payTo: `0x${string}`;
-    maxTimeoutSeconds: number;
-    asset: `0x${string}`;
-    extra: { name: string; decimals: number; orderId: string };
-  }>;
-  error?: string;
-};
+export type { PaymentRequired, PaymentRequirements, PaymentPayload };
 
 export function buildPaymentRequired(
   store: StoreRecord,
@@ -31,47 +24,58 @@ export function buildPaymentRequired(
   orderId: string,
   quantity: number,
 ): PaymentRequired {
-  const amount = (
-    BigInt(toAtomic(sku.price)) * BigInt(quantity)
-  ).toString();
+  const amount = toPaymentAmount(sku.price, quantity);
+  const invoiceId = `INV-${orderId}`;
+  const accept: PaymentRequirements = {
+    scheme: "exact",
+    network: config.network,
+    amount,
+    asset: config.tokenAddress,
+    payTo: store.merchantAddress,
+    maxTimeoutSeconds: 600,
+    extra: {
+      name: config.tokenSymbol,
+      decimals: config.tokenDecimals,
+      orderId,
+      invoiceId,
+      sourceTag: XRPL_SOURCE_TAG,
+      issuer: config.tokenIssuer,
+    },
+  };
   return {
-    x402Version: 1,
-    accepts: [
-      {
-        scheme: "exact",
-        network: config.network,
-        maxAmountRequired: amount,
-        resource: `${origin}/s/${store.slug}/buy`,
-        description: `${sku.title} x${quantity}`,
-        mimeType: "application/json",
-        payTo: store.merchantAddress,
-        maxTimeoutSeconds: 60,
-        asset: config.tokenAddress,
-        extra: {
-          name: config.tokenSymbol,
-          decimals: config.tokenDecimals,
-          orderId,
-        },
-      },
-    ],
+    x402Version: 2,
+    resource: {
+      url: `${origin}/s/${store.slug}/buy`,
+      description: `${sku.title} x${quantity}`,
+      mimeType: "application/json",
+    },
+    accepts: [accept],
   };
 }
 
-export function parsePaymentSignature(header: string): `0x${string}` | null {
+/** Atomic amount for order records (micro-units). */
+export function paymentAmountAtomic(
+  store: StoreRecord,
+  sku: Sku,
+  quantity: number,
+): string {
+  return (
+    BigInt(toAtomic(sku.price)) * BigInt(quantity)
+  ).toString();
+}
+
+export function parsePaymentSignature(header: string): PaymentPayload | null {
   const raw = header.trim();
-  if (raw.startsWith("0x") && raw.length === 66) return raw as `0x${string}`;
+  if (!raw) return null;
   try {
-    const decoded = JSON.parse(
-      Buffer.from(raw, "base64").toString("utf8"),
-    ) as { txHash?: string };
-    if (decoded.txHash?.startsWith("0x")) {
-      return decoded.txHash as `0x${string}`;
-    }
+    return decodePaymentSignatureHeader(raw);
   } catch {
     try {
-      const decoded = JSON.parse(raw) as { txHash?: string };
-      if (decoded.txHash?.startsWith("0x")) {
-        return decoded.txHash as `0x${string}`;
+      const decoded = JSON.parse(
+        Buffer.from(raw, "base64").toString("utf8"),
+      ) as PaymentPayload;
+      if (decoded?.x402Version && decoded?.payload && decoded?.accepted) {
+        return decoded;
       }
     } catch {
       return null;
@@ -80,62 +84,66 @@ export function parsePaymentSignature(header: string): `0x${string}` | null {
   return null;
 }
 
-export async function verifyTransfer(args: {
-  txHash: `0x${string}`;
-  payTo: `0x${string}`;
-  amountAtomic: string;
+function facilitator() {
+  return new FacilitatorClient({ baseUrl: config.facilitatorUrl });
+}
+
+/**
+ * Verify + settle a presigned XRPL Payment via the hosted facilitator.
+ */
+export async function verifyAndSettle(args: {
+  paymentHeader: string;
+  paymentRequirements: PaymentRequirements;
 }) {
   try {
-    const client = createPublicClient({
-      chain: baseSepolia,
-      transport: http(config.rpcUrl),
+    const client = facilitator();
+    const verified = await client.verify({
+      paymentHeader: args.paymentHeader,
+      paymentRequirements: args.paymentRequirements,
     });
-    const receipt = await client.getTransactionReceipt({ hash: args.txHash });
-    if (receipt.status !== "success") {
-      return { ok: false as const, reason: "Transaction reverted" };
+    if (!verified.isValid) {
+      return {
+        ok: false as const,
+        reason: verified.invalidReason || "Facilitator rejected payment",
+      };
     }
 
-    const expected = BigInt(args.amountAtomic);
-    const payTo = args.payTo.toLowerCase();
-    const token = config.tokenAddress.toLowerCase();
-
-    for (const log of receipt.logs) {
-      if (log.address.toLowerCase() !== token) continue;
-      try {
-        const decoded = decodeEventLog({
-          abi: [transferEvent],
-          data: log.data,
-          topics: log.topics,
-        });
-        if (decoded.eventName !== "Transfer") continue;
-        const to = String(decoded.args.to).toLowerCase();
-        const value = decoded.args.value as bigint;
-        if (to === payTo && value === expected) {
-          return {
-            ok: true as const,
-            explorerUrl: explorerTx(args.txHash),
-          };
-        }
-      } catch {
-        continue;
-      }
+    const settled = await client.settle({
+      paymentHeader: args.paymentHeader,
+      paymentRequirements: args.paymentRequirements,
+    });
+    if (!settled.success || !settled.transaction) {
+      return {
+        ok: false as const,
+        reason: settled.errorReason || "Facilitator settle failed",
+      };
     }
 
     return {
-      ok: false as const,
-      reason: `No ${config.tokenSymbol} Transfer of ${args.amountAtomic} to ${args.payTo}`,
+      ok: true as const,
+      txHash: settled.transaction,
+      explorerUrl: explorerTx(settled.transaction),
+      payer: settled.payer || undefined,
     };
   } catch (error) {
     const reason =
-      error instanceof Error ? error.message : "verifyTransfer failed";
+      error instanceof Error ? error.message : "verifyAndSettle failed";
     return { ok: false as const, reason };
   }
+}
+
+/** @deprecated Use verifyAndSettle — kept name alias for call-site clarity. */
+export async function verifyTransfer(args: {
+  paymentHeader: string;
+  paymentRequirements: PaymentRequirements;
+}) {
+  return verifyAndSettle(args);
 }
 
 export function paymentRequiredHeaders(body: PaymentRequired) {
   return {
     "content-type": "application/json",
-    "PAYMENT-REQUIRED": Buffer.from(JSON.stringify(body)).toString("base64"),
+    "PAYMENT-REQUIRED": encodePaymentRequiredHeader(body),
     "cache-control": "no-store",
   };
 }

@@ -23,7 +23,7 @@ const syne = Syne({
 export const metadata: Metadata = {
   title: "Borneo | Discover, decide, pay in one chat",
   description:
-    "Fashion buyer agent for shoppers. No-code storefront chat for merchants. Catalog text cannot change payee, amount, or skip authorize. Visa and USDC stay in the conversation.",
+    "Fashion buyer agent for shoppers. No-code storefront chat for merchants. Catalog text cannot change payee, amount, or skip authorize. Visa and RLUSD stay in the conversation.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

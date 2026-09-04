@@ -23,11 +23,11 @@ export type VisaReceiveAccount = {
  * Complements buyer spend governance — this is what the store will accept.
  */
 export type MerchantGovernance = {
-  /** Accept USDC / x402 settlements */
+  /** Accept RLUSD / x402 settlements on XRPL */
   acceptUsdc: boolean;
   /** Accept Visa scoped-card rail */
   acceptVisa: boolean;
-  /** Floor unit price agents must respect (USDC) */
+  /** Floor unit price agents must respect (RLUSD) */
   minUnitPriceUsdc: number | null;
   /** Cap quantity per agent checkout */
   maxUnitsPerOrder: number | null;
@@ -50,7 +50,8 @@ export const DEFAULT_MERCHANT_GOVERNANCE: MerchantGovernance = {
 export type MerchantProfile = {
   displayName: string;
   email: string;
-  walletAddress?: `0x${string}`;
+  /** XRPL classic r… receive address */
+  walletAddress?: string;
   visaReceive?: VisaReceiveAccount;
   governance?: MerchantGovernance;
   storeSlugs: string[];
@@ -105,7 +106,7 @@ export function normalizeMerchantProfile(
     displayName,
     email,
     walletAddress: data.walletAddress
-      ? (String(data.walletAddress) as `0x${string}`)
+      ? String(data.walletAddress).trim()
       : undefined,
     visaReceive: data.visaReceive
       ? {
@@ -255,7 +256,7 @@ export async function ensureMerchantProfile(
 
 export async function bindMerchantWallet(
   uid: string,
-  walletAddress: `0x${string}`,
+  walletAddress: string,
   identity?: MerchantIdentity,
 ): Promise<MerchantProfile> {
   const current = await ensureMerchantProfile(uid, identity);

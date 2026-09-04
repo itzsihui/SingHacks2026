@@ -26,9 +26,10 @@ import type { Sku, StoreRecord } from "@/lib/store/types";
 import {
   parseMerchantAddress,
   verifyMerchantAuth,
+  type ClassicAddress,
   type HexAddress,
   type MerchantAuthProof,
-} from "@/lib/wallet/ethereum";
+} from "@/lib/wallet/xrpl";
 
 export type MerchantToolResult =
   | {
@@ -125,7 +126,7 @@ function needWalletResult(draft: MerchantDraft | null): MerchantToolResult {
   return {
     status: "need_wallet",
     store: null,
-    reply: `Almost there — bind your receiving wallet once under Settings, then publish. We won’t ask MetaMask again at publish time.`,
+    reply: `Almost there — bind your XRPL receiving address once under Settings, then publish. We won’t ask for the seed again at publish time.`,
     draft: draft ? enrichDraftWithFashion(draft) : null,
   };
 }
@@ -141,7 +142,7 @@ function needVariantsResult(
     reply:
       reply ??
       (fashionCompletenessAsk(enriched.lines) ||
-        "Fill subcategory, size, color, and other fashion details in the inventory form, then set USDC prices."),
+        "Fill subcategory, size, color, and other fashion details in the inventory form, then set RLUSD prices."),
     draft: enriched,
   };
 }
@@ -154,7 +155,7 @@ export type MerchantPublishExtras = {
   existingSlug?: string | null;
   /**
    * Wallet already bound during merchant setup. Used as settlement address when
-   * no fresh MetaMask signature is present — publish should not re-prompt MM.
+   * no fresh XRPL seed signature is present — publish should not re-prompt.
    */
   boundWalletAddress?: string | null;
   /** Appear on /market (default true). From merchant governance. */
@@ -218,7 +219,7 @@ export async function mergeInventoryIntoStore(
 async function resolvePayTo(
   merchantAuth?: MerchantAuthProof | null,
   boundWalletAddress?: string | null,
-): Promise<HexAddress | null> {
+): Promise<ClassicAddress | null> {
   const signed = await verifyMerchantAuth(merchantAuth);
   if (signed) return signed;
   return parseMerchantAddress(boundWalletAddress ?? undefined);
@@ -601,7 +602,7 @@ export async function saveDraftToLiveStore(args: {
   if (completeLines.length === 0) {
     return needPriceResult(
       withQty,
-      "No complete SKUs to save yet — fill size/color, qty, and USDC price on at least one row.",
+      "No complete SKUs to save yet — fill size/color, qty, and RLUSD price on at least one row.",
     );
   }
 
@@ -650,5 +651,5 @@ export async function saveDraftToLiveStore(args: {
   return published;
 }
 
-export type { HexAddress, MerchantAuthProof };
+export type { ClassicAddress, HexAddress, MerchantAuthProof };
 export { draftLineKey };

@@ -164,7 +164,7 @@ export function LandingHome() {
               </h2>
               <p className="mt-2 max-w-[36ch] text-sm leading-relaxed text-[var(--landing-fog)]/60">
                 Fashion agent discovers, compares, and pays — Visa-scoped card
-                first, USDC when you want on-chain settle.
+                first, RLUSD when you want on-chain settle.
               </p>
               <span className="mt-6 inline-flex text-sm font-medium text-[var(--landing-jade)] group-hover:underline">
                 Continue to Shop
@@ -352,7 +352,7 @@ export function LandingHome() {
               </h2>
               <p className="mt-3 max-w-[46ch] text-[var(--landing-fog)]/55">
                 Scoped Visa card in the conversation — no redirect, no extra
-                tab. The agent charges only after you authorize. USDC on Base is
+                tab. The agent charges only after you authorize. RLUSD on XRPL is
                 the second rail when you want on-chain settle.
               </p>
             </Reveal>
@@ -379,7 +379,7 @@ export function LandingHome() {
                   Visa-powered stablecoin
                 </p>
                 <p className="mt-3 text-sm leading-relaxed text-[var(--landing-fog)]/55">
-                  Same chat, second rail: USDC on Base via HTTP 402 / x402.
+                  Same chat, second rail: RLUSD on XRPL via HTTP 402 / x402.
                   Fiat leads; on-chain settle is opt-in.
                 </p>
                 <p className="mt-6 font-mono text-xs text-[var(--landing-ember)]">
@@ -464,7 +464,7 @@ export function LandingHome() {
               </dl>
               <p className="mt-6 max-w-[36ch] text-[13px] leading-relaxed text-[var(--landing-fog)]/55">
                 Spend capped. Merchant locked. Mandate lasts about 15 minutes,
-                then burns. Confirm once in the agent — or settle USDC on Base
+                then burns. Confirm once in the agent — or settle RLUSD on XRPL
                 as the second rail.
               </p>
               <Link href="/buyer/login" className={cn(btnPrimary, "mt-8")}>
@@ -494,7 +494,7 @@ export function LandingHome() {
                 <span className="font-[family-name:var(--font-syne)] text-[var(--landing-fog)]">
                   Payments.{" "}
                 </span>
-                Visa-scoped card in chat first, plus USDC x402 on Base when you
+                Visa-scoped card in chat first, plus RLUSD x402 on XRPL when you
                 want on-chain settle. Both wait on explicit consent.
               </p>
               <p className="text-base leading-relaxed text-[var(--landing-fog)]/65">

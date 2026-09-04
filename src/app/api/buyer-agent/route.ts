@@ -26,7 +26,7 @@ export async function POST(request: Request) {
             skuId: String(body.quote.skuId),
             price: String(body.quote.price),
             merchantAddress: body.quote.merchantAddress
-              ? (String(body.quote.merchantAddress) as `0x${string}`)
+              ? (String(body.quote.merchantAddress) as string)
               : undefined,
           }
         : undefined;

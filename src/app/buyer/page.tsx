@@ -622,7 +622,7 @@ export default function BuyerPage() {
               const label = p.quarantined
                 ? `${p.storeSlug}:${p.id.split(":")[1] || p.id}`
                 : p.title;
-              return `${label} @ /s/${p.storeSlug} · ${p.price} USDC (score ${p.score})${p.quarantined ? " · quarantined" : ""}`;
+              return `${label} @ /s/${p.storeSlug} · ${p.price} RLUSD (score ${p.score})${p.quarantined ? " · quarantined" : ""}`;
             }),
           });
           return {
@@ -933,7 +933,7 @@ export default function BuyerPage() {
             title:
               rail === "visa"
                 ? `Settling Visa · ${lines.length} locked quote(s)`
-                : `Settling USDC x402 · ${lines.length} locked quote(s)`,
+                : `Settling RLUSD x402 · ${lines.length} locked quote(s)`,
             status: "active",
             capability: "privileged",
             description: "Authorized — each SKU settles on its locked quote…",
@@ -1010,7 +1010,7 @@ export default function BuyerPage() {
               });
               if (explorer) {
                 links.push({
-                  label: `Basescan · ${skuId}`,
+                  label: `XRPL explorer · ${skuId}`,
                   href: explorer,
                 });
               }
@@ -1093,7 +1093,7 @@ export default function BuyerPage() {
             {
               role: "assistant",
               content: `Purchase complete for ${paidTitles.join(", ")} via ${
-                rail === "visa" ? "Visa card" : "USDC / x402"
+                rail === "visa" ? "Visa card" : "RLUSD / x402"
               }. Each line used a locked settle quote.`,
               links: links.length ? links.slice(0, 4) : undefined,
             },

@@ -14,10 +14,10 @@ function stripUndefined<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function asHexAddress(value: unknown): `0x${string}` | null {
+function asClassicAddress(value: unknown): string | null {
   const s = String(value || "").trim();
-  if (!/^0x[a-fA-F0-9]{40}$/.test(s)) return null;
-  return s as `0x${string}`;
+  if (!/^r[1-9A-HJ-NP-Za-km-z]{24,34}$/.test(s)) return null;
+  return s;
 }
 
 function normalizeVisa(raw: unknown): StoreVisaReceive | undefined {
@@ -38,7 +38,7 @@ export function normalizeStoreRecord(raw: unknown): StoreRecord | null {
   const data = raw as Record<string, unknown>;
   const slug = String(data.slug || "").trim();
   const name = String(data.name || "").trim();
-  const merchantAddress = asHexAddress(data.merchantAddress);
+  const merchantAddress = asClassicAddress(data.merchantAddress);
   if (!slug || !name || !merchantAddress) return null;
   if (!Array.isArray(data.skus) || data.skus.length === 0) return null;
 

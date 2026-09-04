@@ -19,10 +19,10 @@ const RAILS: Array<{
   },
   {
     id: "stablecoin",
-    title: "USDC on Base Sepolia",
+    title: "RLUSD on XRPL Testnet",
     subtitle: "Stablecoin · x402 handshake",
     detail:
-      "HTTP 402 challenge → on-chain USDC transfer on Base Sepolia → retry with PAYMENT-SIGNATURE — no redirect.",
+      "HTTP 402 challenge → on-chain RLUSD transfer on XRPL Testnet → retry with PAYMENT-SIGNATURE — no redirect.",
   },
 ];
 

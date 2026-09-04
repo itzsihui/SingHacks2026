@@ -207,7 +207,7 @@ export function parsePriceOnly(text: string): string | null {
 }
 
 function guideAsk() {
-  return `Tell me what you're selling — quantity, product, and price in ${config.tokenSymbol}. Example: "10 water bottles for 2 USDC each".`;
+  return `Tell me what you're selling — quantity, product, and price in ${config.tokenSymbol}. Example: "10 water bottles for 2 RLUSD each".`;
 }
 
 function priceAsk(draft: MerchantDraft) {
@@ -335,7 +335,7 @@ export function extractInventoryLines(text: string): {
   const body = stripSellerPreamble(cleaned);
   const withPrices: Array<MerchantDraftLine & { price?: string }> = [];
 
-  // "5 shirts for 2 USDC, 5 jeans at 10"
+  // "5 shirts for 2 RLUSD, 5 jeans at 10"
   const pricedRe =
     /(\d+)\s+([a-z][a-z0-9\s-]{0,40}?)\s+(?:for|at|@|=)\s+(\d+(?:\.\d+)?)\s*(?:usdc|usd|xsgd|sgd)?(?:\s+each)?/gi;
   let m: RegExpExecArray | null;
@@ -897,7 +897,7 @@ function parseCsvHeaderless(csv: string): InventoryParseResult {
 
 export function toStore(
   parsed: ParsedInventory,
-  merchantAddress: `0x${string}` = config.merchantAddress,
+  merchantAddress: string = config.merchantAddress,
   extras?: {
     ownerUid?: string;
     merchantDisplayName?: string;

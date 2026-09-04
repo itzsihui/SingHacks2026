@@ -7,8 +7,9 @@ import { renderReviews } from "@/lib/protocol/reviews";
 import {
   buildPaymentRequired,
   parsePaymentSignature,
+  paymentAmountAtomic,
   paymentRequiredHeaders,
-  verifyTransfer,
+  verifyAndSettle,
 } from "@/lib/protocol/x402";
 import { assertMandateAllows } from "@/lib/straitsx/mcp";
 import { repo } from "@/lib/store/repo";
@@ -105,7 +106,7 @@ export async function handleBuy(slug: string, request: Request) {
     orderId,
     quantity,
   );
-  const amountAtomic = requirements.accepts[0].maxAmountRequired;
+  const amountAtomic = paymentAmountAtomic(store, sku, quantity);
 
   const existing = await repo.getOrder(orderId);
   if (existing?.status === "paid") {
@@ -152,8 +153,8 @@ export async function handleBuy(slug: string, request: Request) {
     });
   }
 
-  const txHash = parsePaymentSignature(signature);
-  if (!txHash) {
+  const payload = parsePaymentSignature(signature);
+  if (!payload) {
     requirements.error = "Invalid PAYMENT-SIGNATURE";
     emit({
       status: 402,
@@ -170,10 +171,9 @@ export async function handleBuy(slug: string, request: Request) {
     });
   }
 
-  const verified = await verifyTransfer({
-    txHash,
-    payTo: store.merchantAddress,
-    amountAtomic,
+  const verified = await verifyAndSettle({
+    paymentHeader: signature.trim(),
+    paymentRequirements: requirements.accepts[0],
   });
   if (!verified.ok) {
     requirements.error = verified.reason;
@@ -192,6 +192,7 @@ export async function handleBuy(slug: string, request: Request) {
     });
   }
 
+  const txHash = verified.txHash;
   const paid: Order = {
     id: orderId,
     slug,

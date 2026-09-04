@@ -2,10 +2,10 @@
 
 # Borneo
 
+[![XRPL](https://img.shields.io/badge/XRPL%20Testnet-RLUSD%20x402-23292F?style=for-the-badge)](#features)
 [![Visa](https://img.shields.io/badge/Visa-scoped%20cards-1A1F71?style=for-the-badge&logo=visa&logoColor=white)](#features)
 [![Fiat](https://img.shields.io/badge/Fiat-authorize%20first-0B6E4F?style=for-the-badge)](#features)
-[![Stablecoin](https://img.shields.io/badge/Visa--powered-stablecoin-2775CA?style=for-the-badge)](#features)
-[![Base](https://img.shields.io/badge/Base%20Sepolia-x402-0052FF?style=for-the-badge)](#features)
+[![Stablecoin](https://img.shields.io/badge/RLUSD-x402-23292F?style=for-the-badge)](#features)
 [![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![OpenAI](https://img.shields.io/badge/OpenAI-agents%20%2B%20Whisper-412991?style=for-the-badge&logo=openai&logoColor=white)](#get-running)
 
@@ -43,9 +43,9 @@ Virtual card with **spend cap**, **merchant scope**, **TTL**, and **burn**. Noth
 
 Sellers bind **Visa receive** + identity on setup. Dual-receive without leaving the agent flow — fiat lands where the merchant expects it.
 
-### 3. Visa-powered stablecoin rail
+### 3. XRPL RLUSD rail
 
-Same conversation, second rail: **USDC on Base** via **HTTP 402 / x402** when you want on-chain settle. Fiat leads; stablecoin is opt-in, not the headline.
+Same conversation, second rail: **RLUSD on XRPL Testnet** via **HTTP 402 / x402** when you want on-chain settle. Fiat leads; stablecoin is opt-in, not the headline.
 
 ### 4. Personal salesperson buyer
 
@@ -86,11 +86,14 @@ flowchart LR
 
 ```bash
 npm install
-cp .env.example .env
+cp .env.example .env.local
+# Fill XRPL_BUYER_SEED, MERCHANT_ADDRESS, Firebase, OPENAI — see scripts/setup-xrpl-rlusd.md
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+Crypto settle rail: **RLUSD on XRPL Testnet** via HTTP 402 / x402 (facilitator). Visa scoped-card rail unchanged.
 
 | Path | What it is |
 |---|---|

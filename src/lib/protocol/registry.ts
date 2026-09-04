@@ -33,7 +33,7 @@ export type MarketProduct = {
   storeSlug: string;
   storeName: string;
   merchantDisplayName?: string;
-  merchantAddress?: `0x${string}`;
+  merchantAddress?: string;
   visaReceiveLabel?: string;
   visaReceiveId?: string;
   imageUrl: string;

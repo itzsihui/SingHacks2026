@@ -125,7 +125,7 @@ export function LandingPitch() {
         </h2>
         <p className="mt-4 max-w-[48ch] text-base leading-relaxed text-[var(--landing-fog)]/70">
           Merchants go agent-ready. Buyers shop in one conversation from browse
-          to pay. Visa-scoped cards lead; USDC on Base is the second rail.
+          to pay. Visa-scoped cards lead; RLUSD on XRPL is the second rail.
           Catalog copy cannot change payee, amount, or skip authorize.
         </p>
       </Reveal>

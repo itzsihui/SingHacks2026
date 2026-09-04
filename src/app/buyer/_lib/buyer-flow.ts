@@ -25,7 +25,7 @@ export type MarketProductPick = {
   storeSlug: string;
   storeName: string;
   merchantDisplayName?: string;
-  merchantAddress?: `0x${string}`;
+  merchantAddress?: string;
   visaReceiveLabel?: string;
   visaReceiveId?: string;
   imageUrl: string;
@@ -43,7 +43,7 @@ export type PurchaseQuote = {
   storeSlug: string;
   skuId: string;
   price: string;
-  merchantAddress?: `0x${string}`;
+  merchantAddress?: string;
   rail: PaymentRail;
 };
 
@@ -52,7 +52,7 @@ export type ChatMessage = {
   content: string;
   /** Catalog hits attached after a real network search — never invent these. */
   products?: MarketProductPick[];
-  /** Optional outbound links (e.g. Basescan receipt). */
+  /** Optional outbound links (e.g. XRPL explorer receipt). */
   links?: Array<{ label: string; href: string }>;
   /** Expandable thought process for this turn (stays after search completes). */
   steps?: ChainStep[];
@@ -254,7 +254,7 @@ export function catalogResultMessage(
 
   const setHint = isRealSet
     ? " These look like complementary pieces — add what you want in Build your set, or tap a piece for details and pay."
-    : " Tap a piece for details, then pay with Visa or USDC.";
+    : " Tap a piece for details, then pay with Visa or RLUSD.";
 
   const wantedPieces = [
     ...(profile?.items || []),

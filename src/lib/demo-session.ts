@@ -19,9 +19,11 @@ export type OnboardSession = {
   merchantAddress?: string | null;
   merchantAuth?: {
     address: string;
+    publicKey?: string;
     message: string;
     signature: string;
-    chainId: number;
+    network?: string;
+    chainId?: number;
     authenticatedAt: string;
   } | null;
 };
@@ -133,7 +135,7 @@ export const DEFAULT_ONBOARD_MESSAGE = "";
 export const DEFAULT_ONBOARD_LINES: OnboardSession["lines"] = [
   {
     role: "borneo",
-    text: "I'm your merchant agent — tell me what fashion inventory you're stocking, or pick a chip below to import CSV / Shopify / MetaMask.",
+    text: "I'm your merchant agent — tell me what fashion inventory you're stocking, or pick a chip below to import CSV / Shopify / XRPL wallet.",
   },
 ];
 

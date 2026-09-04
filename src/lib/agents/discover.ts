@@ -91,7 +91,7 @@ export async function resolveBuyerTarget(args: {
       ok: true;
       slug: string;
       sku: { id: string; title: string; price: string };
-      merchantAddress: `0x${string}`;
+      merchantAddress: string;
       via: "slug" | "registry" | "quote";
     }
   | {

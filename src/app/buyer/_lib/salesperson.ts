@@ -268,7 +268,7 @@ function enrichProfile(
       /\b(?:under|below|max|budget)?\s*([\d.]+)\s*(usdc|xsgd|usd|sgd)?\b/,
     );
     if (budget) {
-      next.budget = `${budget[1]} ${(budget[2] || "USDC").toUpperCase()}`;
+      next.budget = `${budget[1]} ${(budget[2] || "RLUSD").toUpperCase()}`;
     }
   }
   return next;
@@ -440,7 +440,7 @@ export function runDeterministicSalesperson(
     if (/\bblack\b/i.test(lower)) profile.color = "black";
     if (/\bwhite\b/i.test(lower)) profile.color = "white";
     const budget = lower.match(/under\s+([\d.]+)\s*(usdc|xsgd|usd)?/i);
-    if (budget) profile.budget = `${budget[1]} ${(budget[2] || "USDC").toUpperCase()}`;
+    if (budget) profile.budget = `${budget[1]} ${(budget[2] || "RLUSD").toUpperCase()}`;
   }
 
   if (turns === 0 || (!latest && turns <= 1)) {
@@ -601,8 +601,8 @@ export function runDeterministicSalesperson(
   if (item === "compare" && turns === 1) {
     return {
       reply:
-        "I can compare tees and caps across seller catalogs. Prefer a budget under 0.02 USDC, or just show both?",
-      suggestions: ["Under 0.02 USDC", "Show both", "Focus on the tee"],
+        "I can compare tees and caps across seller catalogs. Prefer a budget under 0.02 RLUSD, or just show both?",
+      suggestions: ["Under 0.02 RLUSD", "Show both", "Focus on the tee"],
       status: "clarifying",
       profile: { ...profile, item: "shirt vs cap" },
       llm: "deterministic",
@@ -640,7 +640,7 @@ export function runDeterministicSalesperson(
       profile: {
         ...profile,
         item: "shirt vs cap",
-        budget: profile.budget || "0.02 USDC",
+        budget: profile.budget || "0.02 RLUSD",
       },
       llm: "deterministic",
     };
