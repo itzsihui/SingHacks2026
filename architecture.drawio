@@ -1,0 +1,795 @@
+<mxfile host="app.diagrams.net" agent="Aisle" version="22.1.0" type="device">
+<diagram id="aisle-overview" name="Aisle — High-Level Overview">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Aisle — High-Level Overview" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=22;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="40" y="24" width="480" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Merchants publish machine-readable storefronts. Buyer agents discover, pay, and settle — no human checkout UI." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="58" width="900" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Merchants -->
+        <mxCell id="merchant" value="Merchant&#xa;CSV · chat · Shopify URL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#059669;fontColor=#065F46;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="60" y="140" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Publish -->
+        <mxCell id="publish" value="Publish&#xa;Merchant Agent → Store&#xa;(XSGD SKUs + wallet)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontColor=#4C1D95;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="340" y="140" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Protocol -->
+        <mxCell id="protocol" value="Agentic Storefront Protocol&#xa;&#xa;llms.txt · agent.json · catalog.json&#xa;POST /buy (x402) · POST /checkout (card)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#D97706;fontColor=#92400E;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="640" y="120" width="320" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Buyer -->
+        <mxCell id="buyer" value="Buyer Agent&#xa;intent → discover → pay" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="140" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Rails -->
+        <mxCell id="rail-box" value="Dual-Rail Settlement" style="swimlane;horizontal=0;startSize=28;fillColor=#F0FDF4;strokeColor=#16A34A;fontStyle=1;fontSize=13;fontColor=#14532D;" vertex="1" parent="1">
+          <mxGeometry x="200" y="340" width="1000" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="rail-a" value="Rail A — Avalanche x402&#xa;&#xa;HTTP 402 → XSGD transfer on C-Chain&#xa;→ verify → HTTP 200 + Snowtrace" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;fontSize=13;" vertex="1" parent="rail-box">
+          <mxGeometry x="40" y="50" width="440" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="rail-b" value="Rail B — StraitsX Scoped Card&#xa;&#xa;MCP mandate → spend-capped virtual card&#xa;→ checkout → burn after use" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;fontSize=13;" vertex="1" parent="rail-box">
+          <mxGeometry x="520" y="50" width="440" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Runtime note -->
+        <mxCell id="runtime" value="Runtime: Next.js on Vercel (local protocol) · optional AWS API Gateway + Lambda + DynamoDB when PROTOCOL_BASE_URL is set · Bedrock Converse for agents (deterministic fallback)" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;fillColor=#F8FAFC;strokeColor=#94A3B8;fontColor=#334155;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="200" y="580" width="1000" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows -->
+        <mxCell id="e1" value="inventory" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#059669;fontSize=11;fontColor=#065F46;endArrow=block;endFill=1;" edge="1" parent="1" source="merchant" target="publish">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="storefront" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7C3AED;fontSize=11;fontColor=#5B21B6;endArrow=block;endFill=1;" edge="1" parent="1" source="publish" target="protocol">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="discover + buy" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;fontSize=11;fontColor=#1E40AF;endArrow=block;endFill=1;" edge="1" parent="1" source="buyer" target="protocol">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="settle" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#16A34A;fontSize=11;fontColor=#166534;fontStyle=1;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="protocol" target="rail-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="footer" value="Tabs in this file: Overview · Product · Protocol · x402 · StraitsX · Agents · AWS · Data" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="40" y="680" width="1100" height="24" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+<diagram id="aisle-architecture" name="Product Architecture">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="Aisle — Agentic Storefront Protocol" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=22;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="520" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Merchants publish machine-readable storefronts; buyer agents discover, pay (x402 / StraitsX), and settle without human checkout UI." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="52" width="720" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- ===== ACTORS ===== -->
+        <mxCell id="actors" value="Actors" style="swimlane;horizontal=0;startSize=28;fillColor=#F8FAFC;strokeColor=#94A3B8;fontStyle=1;fontSize=13;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="1520" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="merchant" value="Merchant&#xa;(CSV / chat / Shopify URL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#059669;fontColor=#065F46;fontStyle=1;" vertex="1" parent="actors">
+          <mxGeometry x="50" y="30" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="buyer-agent" value="Buyer Agent&#xa;(tools + Bedrock Converse&#xa;or deterministic fallback)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="actors">
+          <mxGeometry x="320" y="30" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="merchant-agent" value="Merchant Agent&#xa;(onboard inventory → XSGD SKUs)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#7C3AED;fontColor=#4C1D95;fontStyle=1;" vertex="1" parent="actors">
+          <mxGeometry x="620" y="30" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ops" value="Ops / Judges&#xa;/demo · /dashboard · Snowtrace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontColor=#9A3412;fontStyle=1;" vertex="1" parent="actors">
+          <mxGeometry x="920" y="30" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="end-user" value="End User Intent&#xa;(via buyer agent mandate)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#64748B;fontColor=#334155;fontStyle=1;" vertex="1" parent="actors">
+          <mxGeometry x="1210" y="30" width="220" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ===== NEXT.JS APP ===== -->
+        <mxCell id="nextjs" value="Aisle App (Next.js 16 on Vercel)" style="swimlane;horizontal=0;startSize=28;fillColor=#FFFBEB;strokeColor=#D97706;fontStyle=1;fontSize=13;fontColor=#92400E;" vertex="1" parent="1">
+          <mxGeometry x="40" y="260" width="700" height="360" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ui" value="Human Surfaces&#xa;/ · /onboard · /demo · /buyer · /market · /dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontColor=#78350F;" vertex="1" parent="nextjs">
+          <mxGeometry x="40" y="40" width="300" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api-routes" value="App API Routes&#xa;/api/merchant-agent&#xa;/api/buyer-agent&#xa;/api/card-mandate&#xa;/api/demo-script · /api/ops · /api/events" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#FFFFFF;strokeColor=#D97706;fontColor=#78350F;" vertex="1" parent="nextjs">
+          <mxGeometry x="360" y="40" width="300" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="local-protocol" value="In-app Protocol Handlers&#xa;(when PROTOCOL_BASE_URL unset)&#xa;&#xa;GET  /s/:slug/llms.txt&#xa;GET  /s/:slug/agent.json&#xa;GET  /s/:slug/catalog.json&#xa;POST /s/:slug/buy  → HTTP 402 / 200&#xa;POST /s/:slug/checkout&#xa;GET  /s/:slug/orders/:id" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#FEF3C7;strokeColor=#B45309;fontColor=#78350F;fontStyle=0;" vertex="1" parent="nextjs">
+          <mxGeometry x="40" y="140" width="300" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="libs" value="Core Libraries&#xa;&#xa;• protocol/x402 · catalog · llms-txt&#xa;• agents/buyer · merchant · card&#xa;• bedrock/converse (+ tools)&#xa;• straitsx/mcp · eip3009&#xa;• store/repo (memory | DynamoDB)&#xa;• wallet/ethereum (viem)" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#FFFFFF;strokeColor=#D97706;fontColor=#78350F;" vertex="1" parent="nextjs">
+          <mxGeometry x="360" y="170" width="300" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- ===== AWS PROTOCOL SLICE ===== -->
+        <mxCell id="aws" value="AWS Protocol Deploy (optional Well-Architected slice)" style="swimlane;horizontal=0;startSize=28;fillColor=#EFF6FF;strokeColor=#2563EB;fontStyle=1;fontSize=13;fontColor=#1E3A8A;" vertex="1" parent="1">
+          <mxGeometry x="780" y="260" width="780" height="360" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apigw" value="API Gateway&#xa;HTTP API + throttle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="aws">
+          <mxGeometry x="40" y="50" width="180" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="lambda" value="Lambda&#xa;Hono protocolApp&#xa;(services/protocol)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="aws">
+          <mxGeometry x="280" y="50" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ddb" value="DynamoDB&#xa;aisle-protocol table&#xa;pk/sk + gsi1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="aws">
+          <mxGeometry x="540" y="50" width="180" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ssm" value="SSM Parameter Store&#xa;merchant-address · avalanche-rpc" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="aws">
+          <mxGeometry x="40" y="160" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cw" value="CloudWatch&#xa;Logs · metric filters&#xa;402→200 alarm" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="aws">
+          <mxGeometry x="300" y="160" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="bedrock" value="Amazon Bedrock&#xa;Converse + tool use&#xa;(buyer / merchant / card agents)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="aws">
+          <mxGeometry x="540" y="160" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="aws-note" value="infra/protocol.yaml · npm run protocol:deploy&#xa;Same handlers as Next; PROTOCOL_BASE_URL points agents at API Gateway." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#1E40AF;" vertex="1" parent="aws">
+          <mxGeometry x="40" y="260" width="680" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- AWS internal arrows -->
+        <mxCell id="e-apigw-lambda" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563EB;endArrow=block;endFill=1;" edge="1" parent="1" source="apigw" target="lambda">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-lambda-ddb" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563EB;endArrow=block;endFill=1;" edge="1" parent="1" source="lambda" target="ddb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-lambda-cw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;dashed=1;endArrow=open;endFill=0;" edge="1" parent="1" source="lambda" target="cw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-lambda-ssm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;dashed=1;endArrow=open;endFill=0;" edge="1" parent="1" source="lambda" target="ssm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== PAYMENT RAILS ===== -->
+        <mxCell id="rails" value="Dual-Rail Settlement" style="swimlane;horizontal=0;startSize=28;fillColor=#F0FDF4;strokeColor=#16A34A;fontStyle=1;fontSize=13;fontColor=#14532D;" vertex="1" parent="1">
+          <mxGeometry x="40" y="660" width="920" height="220" as="geometry" />
+        </mxCell>
+
+        <mxCell id="x402" value="Rail A — Avalanche x402&#xa;&#xa;1. POST /buy without payment → HTTP 402&#xa;2. Agent transfers XSGD on C-Chain (Fuji/mainnet)&#xa;3. Retry with payment proof → verifyTransfer&#xa;4. HTTP 200 + order receipt + Snowtrace tx" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;" vertex="1" parent="rails">
+          <mxGeometry x="40" y="40" width="400" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="straitsx" value="Rail B — StraitsX Scoped Card&#xa;&#xa;1. Agent requests mandate via StraitsX MCP&#xa;2. One-time virtual card: spend cap = SKU&#xa;3. Merchant whitelist + short TTL&#xa;4. Checkout with card → burn after use" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;" vertex="1" parent="rails">
+          <mxGeometry x="480" y="40" width="400" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- ===== EXTERNAL ===== -->
+        <mxCell id="ext" value="External Networks &amp; Services" style="swimlane;horizontal=0;startSize=28;fillColor=#FAF5FF;strokeColor=#7C3AED;fontStyle=1;fontSize=13;fontColor=#4C1D95;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="660" width="560" height="220" as="geometry" />
+        </mxCell>
+
+        <mxCell id="avax" value="Avalanche C-Chain&#xa;XSGD ERC-20 · Snowtrace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontColor=#4C1D95;fontStyle=1;" vertex="1" parent="ext">
+          <mxGeometry x="30" y="50" width="230" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="sx" value="StraitsX Card MCP&#xa;sandbox/sse or production" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontColor=#4C1D95;fontStyle=1;" vertex="1" parent="ext">
+          <mxGeometry x="290" y="50" width="230" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="shopify" value="Optional: Shopify / CSV / FX&#xa;inventory ingest → XSGD normalize" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7C3AED;fontColor=#4C1D95;" vertex="1" parent="ext">
+          <mxGeometry x="30" y="130" width="490" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ===== DATA FLOW arrows (main) ===== -->
+        <mxCell id="e-merchant-agent" value="inventory" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7C3AED;fontSize=10;fontColor=#5B21B6;endArrow=block;endFill=1;" edge="1" parent="1" source="merchant" target="merchant-agent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-merchant-agent-app" value="publish store" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7C3AED;fontSize=10;fontColor=#5B21B6;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.35;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="merchant-agent" target="nextjs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-buyer-discover" value="discover llms.txt / catalog" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563EB;fontSize=10;fontColor=#1E40AF;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.15;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="buyer-agent" target="nextjs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-user-buyer" value="intent" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748B;fontSize=10;fontColor=#475569;endArrow=block;endFill=1;" edge="1" parent="1" source="end-user" target="buyer-agent">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1320" y="90" />
+              <mxPoint x="440" y="90" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-app-bedrock" value="Converse" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563EB;dashed=1;fontSize=10;fontColor=#1E40AF;endArrow=block;endFill=1;exitX=1;exitY=0.55;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" edge="1" parent="1" source="nextjs" target="bedrock">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-buyer-aws" value="PROTOCOL_BASE_URL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563EB;fontSize=10;fontColor=#1E40AF;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.2;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="buyer-agent" target="aws">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-protocol-x402" value="402 → pay → 200" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#16A34A;fontSize=10;fontColor=#166534;fontStyle=1;endArrow=block;endFill=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="nextjs" target="x402">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-protocol-card" value="card mandate" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#16A34A;fontSize=10;fontColor=#166534;fontStyle=1;endArrow=block;endFill=1;exitX=0.55;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="nextjs" target="straitsx">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-x402-avax" value="XSGD transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7C3AED;fontSize=10;fontColor=#5B21B6;endArrow=block;endFill=1;" edge="1" parent="1" source="x402" target="avax">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-card-sx" value="MCP create/burn" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7C3AED;fontSize=10;fontColor=#5B21B6;endArrow=block;endFill=1;" edge="1" parent="1" source="straitsx" target="sx">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-lambda-x402" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#16A34A;dashed=1;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.85;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="aws" target="x402">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-ops-dash" value="observe" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#EA580C;fontSize=10;fontColor=#9A3412;endArrow=open;endFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.7;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="ops" target="nextjs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legend" value="Data flow legend: solid = primary request path · dashed = optional / observability · Green = payment · Blue = AWS/agent · Purple = chain &amp; card providers" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="40" y="900" width="980" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="Repo: github.com/itzsihui/Aisle · Deploy: npm run protocol:deploy (infra/protocol.yaml) · Demo: /demo" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="40" y="924" width="900" height="24" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+<diagram id="aisle-protocol" name="Protocol Surface &amp; Discovery">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Aisle Protocol Surface — Discovery &amp; Handlers" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=22;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="700" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Same handlers in Next.js (/s/:slug/…) and AWS Lambda (PROTOCOL_BASE_URL). Agents never scrape HTML." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="52" width="900" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Network discovery -->
+        <mxCell id="net" value="Network Discovery (origin-level)" style="swimlane;horizontal=0;startSize=28;fillColor=#EFF6FF;strokeColor=#2563EB;fontStyle=1;fontSize=13;fontColor=#1E3A8A;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="720" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="llms-root" value="GET /llms.txt&#xa;Network index for agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="net">
+          <mxGeometry x="40" y="50" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="registry" value="GET /registry.json&#xa;Store + SKU index&#xa;(buyer product match)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="net">
+          <mxGeometry x="280" y="50" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="resolve" value="resolveBuyerTarget()&#xa;slug OR registry match&#xa;by product name" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="net">
+          <mxGeometry x="520" y="50" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Per-store surface -->
+        <mxCell id="store" value="Per-Store Protocol — /s/:slug/…" style="swimlane;horizontal=0;startSize=28;fillColor=#FFFBEB;strokeColor=#D97706;fontStyle=1;fontSize=13;fontColor=#92400E;" vertex="1" parent="1">
+          <mxGeometry x="40" y="300" width="1520" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="disc" value="Discover" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=1;fontSize=12;fontColor=#92400E;" vertex="1" parent="store">
+          <mxGeometry x="40" y="40" width="100" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="s-llms" value="GET llms.txt&#xa;Human-readable agent brief&#xa;rails + endpoint list" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#B45309;fontColor=#78350F;" vertex="1" parent="store">
+          <mxGeometry x="40" y="70" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s-agent" value="GET agent.json&#xa;ACP agent card&#xa;protocols + buy URLs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#B45309;fontColor=#78350F;" vertex="1" parent="store">
+          <mxGeometry x="270" y="70" width="200" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s-cat" value="GET catalog.json&#xa;SKUs · prices (XSGD)&#xa;rails: x402 + card" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#B45309;fontColor=#78350F;" vertex="1" parent="store">
+          <mxGeometry x="500" y="70" width="200" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pay" value="Pay" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=1;fontSize=12;fontColor=#166534;" vertex="1" parent="store">
+          <mxGeometry x="760" y="40" width="100" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="s-buy" value="POST /buy&#xa;Rail A — x402&#xa;no sig → 402&#xa;valid tx → 200 + order" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;fontStyle=1;" vertex="1" parent="store">
+          <mxGeometry x="760" y="70" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="s-checkout" value="POST /checkout&#xa;Rail B — StraitsX&#xa;mandate assert&#xa;→ paid + burn card" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;fontStyle=1;" vertex="1" parent="store">
+          <mxGeometry x="1010" y="70" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="s-orders" value="GET /orders/:id&#xa;Receipt / status&#xa;txHash · explorer · mandate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontColor=#78350F;" vertex="1" parent="store">
+          <mxGeometry x="1260" y="70" width="220" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="impl" value="Implementation: src/lib/protocol/handlers.ts · routes under src/app/s/[slug]/ · services/protocol (Hono) mirrors the same surface" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#78350F;" vertex="1" parent="store">
+          <mxGeometry x="40" y="210" width="1400" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Sequence strip -->
+        <mxCell id="seq" value="Typical agent path" style="swimlane;horizontal=0;startSize=28;fillColor=#F8FAFC;strokeColor=#64748B;fontStyle=1;fontSize=13;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="40" y="620" width="1520" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="step1" value="1. Resolve&#xa;slug or&#xa;/registry.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;fontColor=#334155;fontStyle=1;" vertex="1" parent="seq">
+          <mxGeometry x="40" y="50" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="step2" value="2. GET&#xa;llms.txt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;fontColor=#334155;fontStyle=1;" vertex="1" parent="seq">
+          <mxGeometry x="260" y="50" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="step3" value="3. GET&#xa;catalog.json&#xa;match SKU" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;fontColor=#334155;fontStyle=1;" vertex="1" parent="seq">
+          <mxGeometry x="460" y="50" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="step4" value="4. Choose rail&#xa;x402 /buy&#xa;or card /checkout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;fontStyle=1;" vertex="1" parent="seq">
+          <mxGeometry x="680" y="50" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="step5" value="5. Settle&#xa;chain or mandate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;fontStyle=1;" vertex="1" parent="seq">
+          <mxGeometry x="920" y="50" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="step6" value="6. GET&#xa;orders/:id&#xa;receipt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;fontColor=#334155;fontStyle=1;" vertex="1" parent="seq">
+          <mxGeometry x="1140" y="50" width="160" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="step7" value="7. Ops&#xa;/dashboard&#xa;/api/events" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#EA580C;fontColor=#9A3412;fontStyle=1;" vertex="1" parent="seq">
+          <mxGeometry x="1360" y="50" width="120" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-s1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#64748B;endArrow=block;endFill=1;" edge="1" parent="1" source="step1" target="step2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#64748B;endArrow=block;endFill=1;" edge="1" parent="1" source="step2" target="step3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#16A34A;endArrow=block;endFill=1;" edge="1" parent="1" source="step3" target="step4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#16A34A;endArrow=block;endFill=1;" edge="1" parent="1" source="step4" target="step5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#64748B;endArrow=block;endFill=1;" edge="1" parent="1" source="step5" target="step6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-s6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#EA580C;dashed=1;endArrow=open;endFill=0;" edge="1" parent="1" source="step6" target="step7"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="e-reg" value="product match" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;fontSize=10;fontColor=#1E40AF;endArrow=block;endFill=1;" edge="1" parent="1" source="registry" target="resolve">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-net-store" value="pick /s/:slug" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;fontSize=10;fontColor=#1E40AF;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.15;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="net" target="store">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="footer" value="Next tabs: x402 handshake · StraitsX card rail" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="40" y="820" width="600" height="24" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+<diagram id="aisle-x402" name="Rail A — Avalanche x402 Handshake">
+    <mxGraphModel dx="1600" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Rail A — Avalanche x402 Handshake (in depth)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=22;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="720" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="HTTP 402 Payment Required → on-chain XSGD Transfer → verifyTransfer → HTTP 200 + order. Fail-soft: without BUYER_PRIVATE_KEY the 402 still fires." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="52" width="1100" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Actors columns -->
+        <mxCell id="col-buyer" value="Buyer Agent&#xa;payX402Tool / Bedrock" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="100" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="col-proto" value="Protocol&#xa;POST /s/:slug/buy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#D97706;fontColor=#92400E;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="420" y="100" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="col-chain" value="Avalanche C-Chain&#xa;XSGD ERC-20" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontColor=#4C1D95;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="100" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="col-store" value="Store / Repo&#xa;memory | DynamoDB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontColor=#14532D;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="100" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Steps -->
+        <mxCell id="s1" value="1. Resolve store + SKU&#xa;slug or /registry.json product match" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="1">
+          <mxGeometry x="60" y="200" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="2. GET llms.txt + catalog.json&#xa;Confirm price &amp; payTo address" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="1">
+          <mxGeometry x="60" y="290" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="3. POST /buy { skuId, quantity, orderId }&#xa;No PAYMENT-SIGNATURE header" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#FEF3C7;strokeColor=#B45309;fontColor=#78350F;" vertex="1" parent="1">
+          <mxGeometry x="60" y="380" width="280" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s4" value="4. buildPaymentRequired()&#xa;x402Version:1 · scheme exact&#xa;maxAmountRequired · payTo · asset XSGD&#xa;extra.orderId" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#FEF3C7;strokeColor=#B45309;fontColor=#78350F;" vertex="1" parent="1">
+          <mxGeometry x="400" y="380" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" value="5. HTTP 402&#xa;PAYMENT-REQUIRED body&#xa;+ response headers" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#FEE2E2;strokeColor=#DC2626;fontColor=#991B1B;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="500" width="240" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s6" value="6. Wallet: ERC-20 transfer(payTo, amount)&#xa;viem + BUYER_PRIVATE_KEY&#xa;(Fuji 43113 or mainnet)" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#EDE9FE;strokeColor=#7C3AED;fontColor=#4C1D95;" vertex="1" parent="1">
+          <mxGeometry x="720" y="500" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s7" value="7. Retry POST /buy&#xa;Header PAYMENT-SIGNATURE = txHash&#xa;(0x… or base64 JSON {txHash})" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="1">
+          <mxGeometry x="60" y="620" width="300" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s8" value="8. verifyTransfer()&#xa;RPC receipt · decode Transfer event&#xa;from / to / value / asset match" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#FEF3C7;strokeColor=#B45309;fontColor=#78350F;" vertex="1" parent="1">
+          <mxGeometry x="400" y="620" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s9" value="9. Persist order (paid)&#xa;txHash · explorerUrl · amountAtomic&#xa;rail: x402" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="620" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s10" value="10. HTTP 200 + receipt&#xa;orderId · Snowtrace link&#xa;emit protocol event" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="750" width="280" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Key modules -->
+        <mxCell id="mods" value="Code map" style="swimlane;horizontal=0;startSize=24;fillColor=#F8FAFC;strokeColor=#94A3B8;fontStyle=1;fontSize=12;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="40" y="880" width="1520" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="m1" value="src/lib/protocol/x402.ts&#xa;buildPaymentRequired · parsePaymentSignature · verifyTransfer" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#FFFFFF;strokeColor=#94A3B8;fontColor=#334155;fontSize=11;" vertex="1" parent="mods">
+          <mxGeometry x="30" y="40" width="360" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="m2" value="src/lib/protocol/handlers.ts → handleBuy&#xa;402 path + paid path + idempotent paid orders" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#FFFFFF;strokeColor=#94A3B8;fontColor=#334155;fontSize=11;" vertex="1" parent="mods">
+          <mxGeometry x="420" y="40" width="360" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="m3" value="src/lib/agents/tools-buyer.ts → payX402Tool&#xa;full handshake orchestration" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#FFFFFF;strokeColor=#94A3B8;fontColor=#334155;fontSize=11;" vertex="1" parent="mods">
+          <mxGeometry x="810" y="40" width="320" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="m4" value="config: MERCHANT_ADDRESS · TOKEN_*&#xa;AVALANCHE_RPC · BUYER_PRIVATE_KEY" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#FFFFFF;strokeColor=#94A3B8;fontColor=#334155;fontSize=11;" vertex="1" parent="mods">
+          <mxGeometry x="1160" y="40" width="320" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Flow arrows -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;endArrow=block;endFill=1;" edge="1" parent="1" source="s1" target="s2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;endArrow=block;endFill=1;" edge="1" parent="1" source="s2" target="s3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" value="unpaid" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#DC2626;fontSize=10;fontColor=#991B1B;endArrow=block;endFill=1;" edge="1" parent="1" source="s3" target="s4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#DC2626;endArrow=block;endFill=1;" edge="1" parent="1" source="s4" target="s5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" value="pay" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7C3AED;fontSize=10;fontColor=#5B21B6;endArrow=block;endFill=1;" edge="1" parent="1" source="s5" target="s6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" value="txHash" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;fontSize=10;fontColor=#1E40AF;endArrow=block;endFill=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="s6" target="s7">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="700" y="545" />
+              <mxPoint x="700" y="580" />
+              <mxPoint x="380" y="580" />
+              <mxPoint x="380" y="660" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#D97706;endArrow=block;endFill=1;" edge="1" parent="1" source="s7" target="s8"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" value="ok" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#16A34A;fontSize=10;fontColor=#166534;endArrow=block;endFill=1;" edge="1" parent="1" source="s8" target="s9"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#16A34A;endArrow=block;endFill=1;" edge="1" parent="1" source="s8" target="s10"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+<diagram id="aisle-straitsx" name="Rail B — StraitsX Scoped Card">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Rail B — StraitsX Scoped Virtual Card (in depth)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=22;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="780" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="One-time mandate: spend cap = SKU price · merchant whitelist · short TTL · burn after checkout. MCP URL from STRAITSX_MCP_URL (sandbox/sse or production)." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="52" width="1200" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Actors -->
+        <mxCell id="card-agent" value="Card Agent&#xa;runCardAgent&#xa;/api/card-mandate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="120" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mcp" value="StraitsX Card MCP&#xa;issueScopedCard()&#xa;SSE sandbox / production" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontColor=#4C1D95;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="120" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="proto" value="Protocol&#xa;POST /s/:slug/checkout&#xa;handleCheckout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#D97706;fontColor=#92400E;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="120" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="repo" value="Repo&#xa;burnMandate&#xa;save Order (straitsx-card)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0FDF4;strokeColor=#16A34A;fontColor=#14532D;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="120" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Flow steps -->
+        <mxCell id="flow" value="Mandate lifecycle" style="swimlane;horizontal=0;startSize=28;fillColor=#F0FDF4;strokeColor=#16A34A;fontStyle=1;fontSize=13;fontColor=#14532D;" vertex="1" parent="1">
+          <mxGeometry x="40" y="250" width="1520" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="f1" value="1. Discover&#xa;resolveBuyerTarget&#xa;GET llms.txt&#xa;GET catalog.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#16A34A;fontColor=#14532D;" vertex="1" parent="flow">
+          <mxGeometry x="30" y="50" width="180" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="f2" value="2. Issue mandate&#xa;spendCap = SKU&#xa;merchant whitelist&#xa;expiresAt (TTL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;fontStyle=1;" vertex="1" parent="flow">
+          <mxGeometry x="250" y="50" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="f3" value="3. Card opaque id&#xa;truncatedPan&#xa;status: active&#xa;source: straitsx-mcp&#xa;or local-mandate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE9FE;strokeColor=#7C3AED;fontColor=#4C1D95;" vertex="1" parent="flow">
+          <mxGeometry x="490" y="50" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="f4" value="4. POST /checkout&#xa;{ skuId, mandate }&#xa;assertMandateAllows" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#B45309;fontColor=#78350F;" vertex="1" parent="flow">
+          <mxGeometry x="730" y="50" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="f5" value="5. Accept → paid&#xa;burn cardOpaqueId&#xa;status: burned&#xa;HTTP 200 receipt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;fontStyle=1;" vertex="1" parent="flow">
+          <mxGeometry x="970" y="50" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="f6" value="6. Reject → 402&#xa;mandate rejected&#xa;(cap / merchant / TTL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#DC2626;fontColor=#991B1B;" vertex="1" parent="flow">
+          <mxGeometry x="1210" y="50" width="200" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-f1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#16A34A;endArrow=block;endFill=1;" edge="1" parent="1" source="f1" target="f2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-f2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#7C3AED;endArrow=block;endFill=1;" edge="1" parent="1" source="f2" target="f3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-f3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#D97706;endArrow=block;endFill=1;" edge="1" parent="1" source="f3" target="f4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-f4a" value="ok" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#16A34A;fontSize=10;endArrow=block;endFill=1;" edge="1" parent="1" source="f4" target="f5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-f4b" value="fail" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#DC2626;fontSize=10;dashed=1;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="f4" target="f6">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="870" y="500" />
+              <mxPoint x="1350" y="500" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Mandate shape -->
+        <mxCell id="mandate" value="CardMandate shape" style="swimlane;horizontal=0;startSize=28;fillColor=#FAF5FF;strokeColor=#7C3AED;fontStyle=1;fontSize=13;fontColor=#4C1D95;" vertex="1" parent="1">
+          <mxGeometry x="40" y="580" width="720" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="mand-fields" value="spendCap: string&#xa;merchant: string (whitelist)&#xa;expiresAt: ISO timestamp&#xa;cardOpaqueId?: string&#xa;truncatedPan?: string&#xa;status?: active | burned&#xa;source?: straitsx-mcp | local-mandate&#xa;burnedAt?: string" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;fillColor=#FFFFFF;strokeColor=#7C3AED;fontColor=#4C1D95;fontSize=12;" vertex="1" parent="mandate">
+          <mxGeometry x="40" y="50" width="300" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="mand-assert" value="assertMandateAllows()&#xa;&#xa;• spendCap ≥ order amount&#xa;• merchant matches store&#xa;• not expired&#xa;• status not already burned" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;fillColor=#EDE9FE;strokeColor=#7C3AED;fontColor=#4C1D95;fontSize=12;" vertex="1" parent="mandate">
+          <mxGeometry x="380" y="50" width="300" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- Code map -->
+        <mxCell id="code" value="Code map" style="swimlane;horizontal=0;startSize=28;fillColor=#F8FAFC;strokeColor=#94A3B8;fontStyle=1;fontSize=13;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="800" y="580" width="760" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" value="src/lib/agents/card.ts — runCardAgent&#xa;src/lib/straitsx/mcp.ts — issueScopedCard&#xa;src/lib/straitsx/mcp-client.ts — SSE client&#xa;src/lib/straitsx/eip3009.ts — auth helpers&#xa;handlers.ts — handleCheckout&#xa;/api/card-mandate route" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;fillColor=#FFFFFF;strokeColor=#94A3B8;fontColor=#334155;fontSize=12;" vertex="1" parent="code">
+          <mxGeometry x="30" y="50" width="700" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- Top arrows -->
+        <mxCell id="e1" value="MCP create" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7C3AED;fontSize=10;fontColor=#5B21B6;endArrow=block;endFill=1;" edge="1" parent="1" source="card-agent" target="mcp"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" value="mandate" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;fontSize=10;fontColor=#1E40AF;endArrow=block;endFill=1;" edge="1" parent="1" source="card-agent" target="proto"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" value="persist + burn" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#16A34A;fontSize=10;fontColor=#166534;endArrow=block;endFill=1;" edge="1" parent="1" source="proto" target="repo"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+<diagram id="aisle-agents" name="Agents &amp; Bedrock Tool Loop">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Agents &amp; Bedrock — Tool Loop (in depth)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=22;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="640" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Bedrock Converse + tool use when credentials/model access exist; otherwise deterministic tools. Handshake behavior is identical either way." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="52" width="1100" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Surfaces -->
+        <mxCell id="ui" value="Human Surfaces" style="swimlane;horizontal=0;startSize=28;fillColor=#FFF7ED;strokeColor=#EA580C;fontStyle=1;fontSize=13;fontColor=#9A3412;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="1520" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="u1" value="/onboard&#xa;Merchant chat" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#EA580C;fontColor=#9A3412;" vertex="1" parent="ui">
+          <mxGeometry x="40" y="40" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="u2" value="/buyer&#xa;Buyer intent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#EA580C;fontColor=#9A3412;" vertex="1" parent="ui">
+          <mxGeometry x="240" y="40" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="u3" value="/demo&#xa;90s script" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#EA580C;fontColor=#9A3412;" vertex="1" parent="ui">
+          <mxGeometry x="440" y="40" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="u4" value="/api/merchant-agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontColor=#78350F;" vertex="1" parent="ui">
+          <mxGeometry x="680" y="40" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="u5" value="/api/buyer-agent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontColor=#78350F;" vertex="1" parent="ui">
+          <mxGeometry x="900" y="40" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="u6" value="/api/card-mandate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontColor=#78350F;" vertex="1" parent="ui">
+          <mxGeometry x="1120" y="40" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Three agents -->
+        <mxCell id="agents" value="Agent runtimes" style="swimlane;horizontal=0;startSize=28;fillColor=#EFF6FF;strokeColor=#2563EB;fontStyle=1;fontSize=13;fontColor=#1E3A8A;" vertex="1" parent="1">
+          <mxGeometry x="40" y="260" width="1520" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ma" value="Merchant Agent&#xa;runMerchantAgent&#xa;&#xa;Inputs: chat · CSV · Shopify URL&#xa;· draft prices · wallet auth&#xa;&#xa;Tools: createStoreTool&#xa;importStoreFromUrl&#xa;&#xa;Status: published | need_price&#xa;| need_wallet | clarify" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#F5F3FF;strokeColor=#7C3AED;fontColor=#4C1D95;fontSize=12;" vertex="1" parent="agents">
+          <mxGeometry x="30" y="50" width="460" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="ba" value="Buyer Agent&#xa;runBuyerAgent&#xa;&#xa;System: never scrape HTML&#xa;Always call pay_x402&#xa;&#xa;Tool: payX402Tool&#xa;resolve → llms → catalog&#xa;→ 402 → transfer → 200&#xa;&#xa;llm: bedrock | deterministic" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;fontSize=12;" vertex="1" parent="agents">
+          <mxGeometry x="530" y="50" width="460" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="ca" value="Card Agent&#xa;runCardAgent&#xa;&#xa;Discover store + SKU&#xa;issueScopedCard (MCP)&#xa;POST /checkout&#xa;&#xa;Returns steps + receipt&#xa;+ mandate (burned)" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;fontSize=12;" vertex="1" parent="agents">
+          <mxGeometry x="1030" y="50" width="450" height="200" as="geometry" />
+        </mxCell>
+
+        <!-- Bedrock loop -->
+        <mxCell id="bedrock" value="Bedrock Converse loop" style="swimlane;horizontal=0;startSize=28;fillColor=#FEF3C7;strokeColor=#D97706;fontStyle=1;fontSize=13;fontColor=#92400E;" vertex="1" parent="1">
+          <mxGeometry x="40" y="580" width="980" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="b1" value="converseWithTools()&#xa;src/lib/bedrock/converse.ts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D97706;fontColor=#78350F;fontStyle=1;" vertex="1" parent="bedrock">
+          <mxGeometry x="30" y="50" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" value="Model&#xa;BEDROCK_MODEL_ID&#xa;(e.g. Claude Haiku)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#D97706;fontColor=#78350F;" vertex="1" parent="bedrock">
+          <mxGeometry x="330" y="50" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="b3" value="toolSpec + handlers&#xa;model requests tool&#xa;→ execute → return result&#xa;→ short natural reply" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=10;fillColor=#FFFFFF;strokeColor=#D97706;fontColor=#78350F;" vertex="1" parent="bedrock">
+          <mxGeometry x="570" y="50" width="360" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="b4" value="If Bedrock unavailable / BEDROCK_ENABLED=false → call deterministic tool path directly (same pay_x402 / createStore results)." style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#FEF3C7;strokeColor=#B45309;fontColor=#78350F;fontSize=12;" vertex="1" parent="bedrock">
+          <mxGeometry x="30" y="140" width="900" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Shared libs -->
+        <mxCell id="shared" value="Shared discovery" style="swimlane;horizontal=0;startSize=28;fillColor=#F8FAFC;strokeColor=#64748B;fontStyle=1;fontSize=13;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="580" width="500" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="sh1" value="src/lib/agents/discover.ts&#xa;&#xa;extractSlugFromMessage&#xa;extractRequestedProduct&#xa;productMatchScore&#xa;resolveBuyerTarget&#xa;&#xa;Used by buyer + card agents" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#FFFFFF;strokeColor=#64748B;fontColor=#334155;fontSize=12;" vertex="1" parent="shared">
+          <mxGeometry x="30" y="50" width="440" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- arrows from UI to agents -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7C3AED;endArrow=block;endFill=1;" edge="1" parent="1" source="u4" target="ma"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;endArrow=block;endFill=1;" edge="1" parent="1" source="u5" target="ba"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#16A34A;endArrow=block;endFill=1;" edge="1" parent="1" source="u6" target="ca"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" value="Converse" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#D97706;dashed=1;fontSize=10;fontColor=#92400E;endArrow=block;endFill=1;" edge="1" parent="1" source="ba" target="b1"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+<diagram id="aisle-aws" name="AWS Protocol Deploy Slice">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="AWS Protocol Deploy — Well-Architected Slice (in depth)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=22;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="820" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Optional. Same protocol handlers as Next. Agents hit PROTOCOL_BASE_URL (API Gateway) instead of local /s/:slug. infra/protocol.yaml · npm run protocol:deploy" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="52" width="1200" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Deploy path -->
+        <mxCell id="deploy" value="Deploy path" style="swimlane;horizontal=0;startSize=28;fillColor=#F8FAFC;strokeColor=#64748B;fontStyle=1;fontSize=13;fontColor=#0F172A;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="1520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" value="npm run protocol:build&#xa;Bundle services/protocol&#xa;→ aisle-protocol.zip" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;fontColor=#334155;" vertex="1" parent="deploy">
+          <mxGeometry x="40" y="45" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" value="Upload to S3&#xa;ArtifactBucket / ArtifactKey" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;fontColor=#334155;" vertex="1" parent="deploy">
+          <mxGeometry x="340" y="45" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" value="CloudFormation&#xa;infra/protocol.yaml" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="deploy">
+          <mxGeometry x="640" y="45" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="d4" value="Outputs → .env&#xa;PROTOCOL_BASE_URL&#xa;AISLE_TABLE&#xa;(+ NEXT_PUBLIC_*)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#D97706;fontColor=#78350F;fontStyle=1;" vertex="1" parent="deploy">
+          <mxGeometry x="940" y="45" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="d5" value="Restart&#xa;npm run dev" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;fontColor=#334155;" vertex="1" parent="deploy">
+          <mxGeometry x="1240" y="45" width="220" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-d1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#64748B;endArrow=block;endFill=1;" edge="1" parent="1" source="d1" target="d2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-d2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2563EB;endArrow=block;endFill=1;" edge="1" parent="1" source="d2" target="d3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-d3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#D97706;endArrow=block;endFill=1;" edge="1" parent="1" source="d3" target="d4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-d4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#64748B;endArrow=block;endFill=1;" edge="1" parent="1" source="d4" target="d5"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- Runtime stack -->
+        <mxCell id="stack" value="Runtime stack" style="swimlane;horizontal=0;startSize=28;fillColor=#EFF6FF;strokeColor=#2563EB;fontStyle=1;fontSize=13;fontColor=#1E3A8A;" vertex="1" parent="1">
+          <mxGeometry x="40" y="280" width="1000" height="360" as="geometry" />
+        </mxCell>
+        <mxCell id="apigw" value="API Gateway&#xa;HTTP API&#xa;throttle · CORS&#xa;/s/{slug}/* routes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="stack">
+          <mxGeometry x="40" y="50" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="lambda" value="Lambda&#xa;Hono protocolApp&#xa;services/protocol&#xa;handler.ts → app.ts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="stack">
+          <mxGeometry x="320" y="50" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ddb" value="DynamoDB&#xa;aisle-protocol-*&#xa;pk / sk&#xa;GSI1: gsi1pk / gsi1sk&#xa;PAY_PER_REQUEST" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="stack">
+          <mxGeometry x="620" y="40" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ssm" value="SSM Parameter Store&#xa;/aisle/{stack}/merchant-address&#xa;/aisle/{stack}/avalanche-rpc" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="stack">
+          <mxGeometry x="40" y="200" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="cw" value="CloudWatch&#xa;Log group · metric filters&#xa;Alarm on 402→200 gap&#xa;7-day retention" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="stack">
+          <mxGeometry x="360" y="200" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="iam" value="IAM role&#xa;least privilege:&#xa;Logs · Dynamo · SSM read" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="stack">
+          <mxGeometry x="640" y="200" width="220" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-al" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2563EB;endArrow=block;endFill=1;" edge="1" parent="1" source="apigw" target="lambda"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-ld" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#2563EB;endArrow=block;endFill=1;" edge="1" parent="1" source="lambda" target="ddb"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-ls" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#64748B;dashed=1;endArrow=open;endFill=0;" edge="1" parent="1" source="lambda" target="ssm"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-lc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#64748B;dashed=1;endArrow=open;endFill=0;" edge="1" parent="1" source="lambda" target="cw"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- Split brain note -->
+        <mxCell id="split" value="Local vs AWS split" style="swimlane;horizontal=0;startSize=28;fillColor=#FFFBEB;strokeColor=#D97706;fontStyle=1;fontSize=13;fontColor=#92400E;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="280" width="480" height="360" as="geometry" />
+        </mxCell>
+        <mxCell id="sp1" value="PROTOCOL_BASE_URL unset&#xa;→ Next /s/:slug handlers&#xa;→ memory or local Dynamo" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#FFFFFF;strokeColor=#D97706;fontColor=#78350F;" vertex="1" parent="split">
+          <mxGeometry x="30" y="50" width="420" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="sp2" value="PROTOCOL_BASE_URL set&#xa;→ buyer/card agents call API GW&#xa;→ stores in AISLE_TABLE&#xa;&#xa;Onboard publishes must land&#xa;in the same table the buyer reads" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#FEF3C7;strokeColor=#B45309;fontColor=#78350F;" vertex="1" parent="split">
+          <mxGeometry x="30" y="150" width="420" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="sp3" value="Gotcha: redeploy mints new API id.&#xa;Update both PROTOCOL_BASE_URL and&#xa;NEXT_PUBLIC_PROTOCOL_BASE_URL." style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#FEE2E2;strokeColor=#DC2626;fontColor=#991B1B;fontSize=11;" vertex="1" parent="split">
+          <mxGeometry x="30" y="290" width="420" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Bedrock note -->
+        <mxCell id="note" value="Bedrock is separate from this CFN stack — used by the Next app for agent Converse. Protocol Lambda does not invoke Bedrock." style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;fillColor=#F8FAFC;strokeColor=#94A3B8;fontColor=#334155;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="680" width="1520" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="footer" value="Params: MerchantAddress · Token* · AvalancheRpcUrl · ChainId · ExplorerBase · ArtifactBucket/Key" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="40" y="750" width="900" height="24" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+<diagram id="aisle-data" name="Data Model &amp; Persistence">
+    <mxGraphModel dx="1600" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Data Model &amp; Persistence (in depth)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=22;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="560" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="repo facade selects memory or DynamoDB. Types in src/lib/store/types.ts · adapters memory.ts / dynamo.ts · repo.ts" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="40" y="52" width="1100" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Repo facade -->
+        <mxCell id="repo" value="repo (facade)&#xa;getStore · putStore · listStores&#xa;getOrder · putOrder · burnMandate&#xa;events ring buffer" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=14;fillColor=#FFFBEB;strokeColor=#D97706;fontColor=#92400E;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="520" y="100" width="360" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="mem" value="Memory adapter&#xa;src/lib/store/memory.ts&#xa;in-process Map&#xa;(local / demo default)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#64748B;fontColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="200" y="280" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="dyn" value="DynamoDB adapter&#xa;src/lib/store/dynamo.ts&#xa;AISLE_TABLE&#xa;pk/sk + gsi1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="920" y="280" width="280" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-rm" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#64748B;endArrow=block;endFill=1;" edge="1" parent="1" source="repo" target="mem"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-rd" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563EB;endArrow=block;endFill=1;" edge="1" parent="1" source="repo" target="dyn"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- Entities -->
+        <mxCell id="ents" value="Domain entities" style="swimlane;horizontal=0;startSize=28;fillColor=#F0FDF4;strokeColor=#16A34A;fontStyle=1;fontSize=13;fontColor=#14532D;" vertex="1" parent="1">
+          <mxGeometry x="40" y="420" width="1520" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="store" value="StoreRecord&#xa;&#xa;slug&#xa;name&#xa;merchantAddress&#xa;skus: Sku[]&#xa;createdAt" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#DCFCE7;strokeColor=#16A34A;fontColor=#14532D;fontStyle=1;" vertex="1" parent="ents">
+          <mxGeometry x="40" y="50" width="220" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="sku" value="Sku&#xa;&#xa;id&#xa;title&#xa;description&#xa;quantity&#xa;price (XSGD string)" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#FFFFFF;strokeColor=#16A34A;fontColor=#14532D;" vertex="1" parent="ents">
+          <mxGeometry x="300" y="50" width="200" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="order" value="Order&#xa;&#xa;id · slug · skuId · quantity&#xa;amountAtomic&#xa;status: pending|paid|failed&#xa;rail: x402 | straitsx-card&#xa;txHash? · explorerUrl?&#xa;mandate? · paidAt?" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#FEF3C7;strokeColor=#D97706;fontColor=#78350F;fontStyle=1;" vertex="1" parent="ents">
+          <mxGeometry x="540" y="50" width="280" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="mandate" value="CardMandate&#xa;&#xa;spendCap · merchant&#xa;expiresAt&#xa;cardOpaqueId?&#xa;truncatedPan?&#xa;status: active|burned&#xa;source: mcp|local&#xa;burnedAt?" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#EDE9FE;strokeColor=#7C3AED;fontColor=#4C1D95;fontStyle=1;" vertex="1" parent="ents">
+          <mxGeometry x="860" y="50" width="240" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="event" value="ProtocolEvent&#xa;&#xa;ts · status · method&#xa;path · store?&#xa;orderId? · message&#xa;rail?&#xa;&#xa;/api/events · dashboard" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=12;fillColor=#FFF7ED;strokeColor=#EA580C;fontColor=#9A3412;" vertex="1" parent="ents">
+          <mxGeometry x="1140" y="50" width="240" height="200" as="geometry" />
+        </mxCell>
+
+        <!-- Key patterns -->
+        <mxCell id="keys" value="DynamoDB key patterns (conceptual)" style="swimlane;horizontal=0;startSize=28;fillColor=#EFF6FF;strokeColor=#2563EB;fontStyle=1;fontSize=13;fontColor=#1E3A8A;" vertex="1" parent="1">
+          <mxGeometry x="40" y="740" width="1520" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="k1" value="Store&#xa;pk = STORE#slug&#xa;sk = META" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="keys">
+          <mxGeometry x="40" y="50" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="k2" value="Order&#xa;pk = ORDER#id&#xa;sk = META&#xa;(+ store linkage via attrs)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DBEAFE;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="keys">
+          <mxGeometry x="360" y="50" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="k3" value="GSI1&#xa;list / registry queries&#xa;gsi1pk / gsi1sk" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="keys">
+          <mxGeometry x="700" y="50" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="k4" value="Registry feed&#xa;listStores → /registry.json&#xa;buyer product matching" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#2563EB;fontColor=#1E3A8A;" vertex="1" parent="keys">
+          <mxGeometry x="1020" y="50" width="320" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-ss" value="contains" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#16A34A;fontSize=10;fontColor=#166534;endArrow=block;endFill=1;" edge="1" parent="1" source="store" target="sku"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e-om" value="optional" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7C3AED;fontSize=10;fontColor=#5B21B6;endArrow=block;endFill=1;" edge="1" parent="1" source="order" target="mandate"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
