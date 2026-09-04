@@ -1,10 +1,15 @@
 import { ensureUniqueSkuIds } from "@/lib/inventory/parse";
+import { isFirebaseConfigured } from "@/lib/firebase/client";
 import { memoryRepo } from "@/lib/store/memory";
 import type { StoreRecord } from "@/lib/store/types";
 import type { StoreRepo } from "@/lib/store/types-repo";
 
 function useDynamo() {
   return Boolean(process.env.AISLE_TABLE?.trim());
+}
+
+function useFirestore() {
+  return !useDynamo() && isFirebaseConfigured();
 }
 
 /** Dynamo rejects NaN; catch bad SKUs before marshalling. */
@@ -26,21 +31,39 @@ function assertStoreFinite(store: StoreRecord): StoreRecord {
 }
 
 function normalizeStore(store: StoreRecord): StoreRecord {
-  return ensureUniqueSkuIds(assertStoreFinite(store));
+  return ensureUniqueSkuIds({
+    ...assertStoreFinite(store),
+    listOnMarket: store.listOnMarket !== false,
+  });
 }
 
 let dynamo: StoreRepo | null = null;
+let firestore: StoreRepo | null = null;
 
 async function backend(): Promise<StoreRepo> {
-  if (!useDynamo()) return memoryRepo;
-  if (!dynamo) {
-    const mod = await import("@/lib/store/dynamo");
-    dynamo = mod.dynamoRepo;
+  if (useDynamo()) {
+    if (!dynamo) {
+      const mod = await import("@/lib/store/dynamo");
+      dynamo = mod.dynamoRepo;
+    }
+    return dynamo;
   }
-  return dynamo;
+  if (useFirestore()) {
+    if (!firestore) {
+      const mod = await import("@/lib/store/firestore");
+      firestore = mod.createFirestoreStoreRepo(memoryRepo);
+    }
+    return firestore;
+  }
+  return memoryRepo;
 }
 
-/** Async store. Memory locally; DynamoDB when AISLE_TABLE is set (Lambda / AWS). */
+/**
+ * Async store catalog.
+ * - DynamoDB when AISLE_TABLE is set
+ * - Firestore `stores/{slug}` when Firebase is configured (durable marketplace)
+ * - In-memory otherwise
+ */
 export const repo: StoreRepo = {
   listStores: async () => {
     const stores = await (await backend()).listStores();

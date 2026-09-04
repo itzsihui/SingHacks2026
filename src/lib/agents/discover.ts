@@ -174,7 +174,9 @@ export async function resolveBuyerTarget(args: {
   }
 
   // No slug — search the network registry (in-process)
-  const stores = await repo.listStores();
+  const stores = (await repo.listStores()).filter(
+    (s) => s.listOnMarket !== false,
+  );
   if (stores.length === 0) {
     return {
       ok: false,

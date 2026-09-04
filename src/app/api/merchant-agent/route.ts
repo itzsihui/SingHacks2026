@@ -33,6 +33,7 @@ export async function POST(request: Request) {
       };
       existingSlug?: string | null;
       boundWalletAddress?: string | null;
+      listOnMarket?: boolean;
     };
     const result = await runMerchantAgent({
       message: body.message,
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
       visaReceive: body.visaReceive,
       existingSlug: body.existingSlug,
       boundWalletAddress: body.boundWalletAddress,
+      listOnMarket: body.listOnMarket,
     });
     return Response.json(result);
   } catch (error) {

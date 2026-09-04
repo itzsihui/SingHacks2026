@@ -25,6 +25,7 @@ export function sampleMarketStores(
       slug: "island-linen",
       name: "Island Linen Co",
       merchantAddress,
+      listOnMarket: true,
       createdAt,
       skus: [
         sku(
@@ -117,6 +118,7 @@ export function sampleMarketStores(
       slug: "tropic-step",
       name: "Tropic Step",
       merchantAddress,
+      listOnMarket: true,
       createdAt,
       skus: [
         sku(
@@ -195,6 +197,7 @@ export function sampleMarketStores(
       slug: "linjer-light",
       name: "Linjer Light",
       merchantAddress,
+      listOnMarket: true,
       createdAt,
       skus: [
         sku(
@@ -273,6 +276,7 @@ export function sampleMarketStores(
       slug: "canopy-wear",
       name: "Canopy Wear",
       merchantAddress,
+      listOnMarket: true,
       createdAt,
       skus: [
         sku(
@@ -372,6 +376,7 @@ export function sampleMarketStores(
       slug: "hackathon-shirts",
       name: "VISA Hackathon Shirts",
       merchantAddress,
+      listOnMarket: true,
       createdAt,
       skus: [
         sku(

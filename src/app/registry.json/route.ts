@@ -6,7 +6,9 @@ import { repo } from "@/lib/store/repo";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const stores = await repo.listStores();
+  const stores = (await repo.listStores()).filter(
+    (s) => s.listOnMarket !== false,
+  );
   const origin = originFromRequest(request);
   const body = renderRegistryJson(stores, origin);
   emit({

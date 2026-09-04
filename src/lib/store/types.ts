@@ -23,6 +23,11 @@ export type StoreRecord = {
   merchantAddress: `0x${string}`;
   /** Visa/fiat receiving account snapshot for card rail settlement display. */
   visaReceive?: StoreVisaReceive;
+  /**
+   * When true (default), SKUs appear on /market and the agent registry.
+   * Stamped from merchant governance at publish time.
+   */
+  listOnMarket?: boolean;
   skus: Sku[];
   createdAt: string;
 };

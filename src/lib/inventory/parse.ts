@@ -902,15 +902,19 @@ export function toStore(
     ownerUid?: string;
     merchantDisplayName?: string;
     visaReceive?: StoreRecord["visaReceive"];
+    listOnMarket?: boolean;
+    /** Force slug (e.g. re-publish after catalog miss). */
+    slug?: string;
   },
 ): StoreRecord {
   return ensureUniqueSkuIds({
-    slug: parsed.slug,
+    slug: extras?.slug?.trim() || parsed.slug,
     name: parsed.name,
     ownerUid: extras?.ownerUid,
     merchantDisplayName: extras?.merchantDisplayName,
     merchantAddress,
     visaReceive: extras?.visaReceive,
+    listOnMarket: extras?.listOnMarket !== false,
     createdAt: new Date().toISOString(),
     skus: parsed.skus.map((sku, index) => {
       const quantity = Number(sku.quantity);
@@ -921,9 +925,10 @@ export function toStore(
       if (!Number.isFinite(priceNum) || priceNum <= 0) {
         throw new Error(`Invalid price for ${sku.title}`);
       }
+      const slug = extras?.slug?.trim() || parsed.slug;
       return {
         id:
-          parsed.slug === "hackathon-shirts"
+          slug === "hackathon-shirts"
             ? "shirt"
             : slugify(sku.title) || `sku-${index + 1}`,
         title: sku.title,

@@ -22,6 +22,7 @@ export async function POST(request: Request) {
         settlementNote?: string;
       };
       boundWalletAddress?: string | null;
+      listOnMarket?: boolean;
     };
 
     const slug = String(body.slug || "").trim();
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
       merchantDisplayName: body.merchantDisplayName,
       visaReceive: body.visaReceive,
       boundWalletAddress: body.boundWalletAddress,
+      listOnMarket: body.listOnMarket,
     });
 
     return Response.json(result);

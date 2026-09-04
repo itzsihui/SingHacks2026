@@ -66,6 +66,7 @@ function inventoryFromLines(
   lines: Array<MerchantDraftLine & { price: string }>,
   description?: string,
   storeName?: string,
+  ownerUid?: string,
 ): ParsedInventory {
   const skus = lines.map((line) => {
     const title = line.title.trim();
@@ -86,15 +87,22 @@ function inventoryFromLines(
       (skus.length === 1
         ? skus[0].title.replace(/\b\w/g, (c) => c.toUpperCase())
         : "Borneo Store");
+  const baseSlug = isHackathon
+    ? "hackathon-shirts"
+    : name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "")
+        .slice(0, 40) || "store";
+  // Merchant-owned shops get a stable unique slug so publishes don't clobber
+  // shared demo slugs like "borneo-store".
+  const slug =
+    isHackathon || !ownerUid
+      ? baseSlug
+      : `${baseSlug}-${ownerUid.slice(0, 8).toLowerCase()}`.slice(0, 48);
   return {
     name,
-    slug: isHackathon
-      ? "hackathon-shirts"
-      : name
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, "")
-          .slice(0, 48) || "store",
+    slug,
     skus,
   };
 }
@@ -149,6 +157,8 @@ export type MerchantPublishExtras = {
    * no fresh MetaMask signature is present — publish should not re-prompt MM.
    */
   boundWalletAddress?: string | null;
+  /** Appear on /market (default true). From merchant governance. */
+  listOnMarket?: boolean;
 };
 
 function skuMatchKey(sku: Pick<Sku, "title">): string {
@@ -196,6 +206,10 @@ export async function mergeInventoryIntoStore(
     merchantDisplayName:
       extras?.merchantDisplayName || existing.merchantDisplayName,
     visaReceive: extras?.visaReceive || existing.visaReceive,
+    listOnMarket:
+      extras?.listOnMarket !== undefined
+        ? extras.listOnMarket !== false
+        : existing.listOnMarket !== false,
     skus: [...byTitle.values()],
   };
   return repo.putStore(next);
@@ -257,34 +271,51 @@ async function publishStore(
       return {
         status: "published",
         store: merged,
-        reply: `Inventory updated on /s/${merged.slug}. There ${merged.skus.length === 1 ? "is" : "are"} now ${merged.skus.length} SKU${merged.skus.length === 1 ? "" : "s"} priced in ${config.tokenSymbol}. View inventory sheet to keep editing.`,
+        reply: `Inventory updated on /s/${merged.slug} and listed on /market. There ${merged.skus.length === 1 ? "is" : "are"} now ${merged.skus.length} SKU${merged.skus.length === 1 ? "" : "s"} priced in ${config.tokenSymbol}. View inventory sheet to keep editing.`,
         draft: sheet,
       };
     }
   }
 
-  const store = toStore(inventory, payTo, {
-    ownerUid: extras.ownerUid,
-    merchantDisplayName: extras.merchantDisplayName,
-    visaReceive: {
-      accountLabel: extras.visaReceive.accountLabel.trim(),
-      receiveId: extras.visaReceive.receiveId?.trim() || undefined,
-      settlementNote: extras.visaReceive.settlementNote?.trim() || undefined,
+  // Prefer unique merchant slug; keep existingSlug if re-creating after catalog miss
+  let publishSlug = inventory.slug;
+  if (existingSlug) {
+    publishSlug = existingSlug;
+  } else if (extras.ownerUid && inventory.slug !== "hackathon-shirts") {
+    const suffix = extras.ownerUid.slice(0, 8).toLowerCase();
+    if (!inventory.slug.endsWith(`-${suffix}`)) {
+      publishSlug = `${inventory.slug.slice(0, 40)}-${suffix}`.slice(0, 48);
+    }
+  }
+
+  const store = toStore(
+    { ...inventory, slug: publishSlug },
+    payTo,
+    {
+      ownerUid: extras.ownerUid,
+      merchantDisplayName: extras.merchantDisplayName,
+      visaReceive: {
+        accountLabel: extras.visaReceive.accountLabel.trim(),
+        receiveId: extras.visaReceive.receiveId?.trim() || undefined,
+        settlementNote: extras.visaReceive.settlementNote?.trim() || undefined,
+      },
+      listOnMarket: extras.listOnMarket !== false,
+      slug: publishSlug,
     },
-  });
+  );
   await repo.putStore(store);
   emit({
     status: 200,
     method: "POST",
     path: `/onboard`,
     store: store.slug,
-    message: `published /s/${store.slug}/llms.txt owner=${store.ownerUid}`,
+    message: `published /s/${store.slug}/llms.txt owner=${store.ownerUid} market=${store.listOnMarket !== false}`,
   });
   const sheet = draftFromStoreSkus(store);
   return {
     status: "published",
     store,
-    reply: `The store is now live. Agents can read /s/${store.slug}/llms.txt — and the shop is listed on /market and the network /llms.txt registry. There ${store.skus.length === 1 ? "is" : "are"} ${store.skus.length} SKU${store.skus.length === 1 ? "" : "s"} priced in ${config.tokenSymbol}. Settlements go to your Settings receiving rails (crypto + Visa).`,
+    reply: `The store is now live on /market. Agents can read /s/${store.slug}/llms.txt — and the shop is listed on the network /llms.txt registry. There ${store.skus.length === 1 ? "is" : "are"} ${store.skus.length} SKU${store.skus.length === 1 ? "" : "s"} priced in ${config.tokenSymbol}. Settlements go to your Settings receiving rails (crypto + Visa).`,
     draft: sheet,
   };
 }
@@ -352,6 +383,7 @@ export async function createStoreTool(args: {
   visaReceive?: StoreRecord["visaReceive"];
   existingSlug?: string | null;
   boundWalletAddress?: string | null;
+  listOnMarket?: boolean;
 }): Promise<MerchantToolResult> {
   const draft = normalizeDraft(args.draft);
   const auth = args.merchantAuth;
@@ -361,6 +393,7 @@ export async function createStoreTool(args: {
     visaReceive: args.visaReceive,
     existingSlug: args.existingSlug,
     boundWalletAddress: args.boundWalletAddress,
+    listOnMarket: args.listOnMarket,
   };
 
   if (draft && args.prices && args.prices.length > 0) {
@@ -424,6 +457,7 @@ export async function createStoreTool(args: {
         })),
         args.message,
         args.storeName || needDraft.name,
+        args.ownerUid,
       ),
       auth,
       extras,
@@ -462,6 +496,7 @@ export async function createStoreTool(args: {
         })),
         args.message,
         args.storeName || needDraft.name,
+        args.ownerUid,
       ),
       auth,
       extras,
@@ -531,6 +566,7 @@ export async function saveDraftToLiveStore(args: {
   merchantDisplayName?: string;
   visaReceive?: StoreRecord["visaReceive"];
   boundWalletAddress?: string | null;
+  listOnMarket?: boolean;
 }): Promise<MerchantToolResult> {
   const draft = normalizeDraft(args.draft);
   if (!draft) {
@@ -597,6 +633,7 @@ export async function saveDraftToLiveStore(args: {
     visaReceive: args.visaReceive,
     existingSlug: args.slug,
     boundWalletAddress: args.boundWalletAddress,
+    listOnMarket: args.listOnMarket,
   });
   // Return full working sheet (complete + incomplete) after save
   if (published.status === "published") {

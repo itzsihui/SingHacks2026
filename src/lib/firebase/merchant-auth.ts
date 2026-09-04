@@ -313,6 +313,19 @@ export async function appendMerchantStoreSlug(
   });
 }
 
+/** Persist full store catalog so /market can list SKUs after publish. */
+export async function savePublishedStoreToCloud(
+  store: import("@/lib/store/types").StoreRecord,
+): Promise<void> {
+  const db = getFirebaseDb();
+  if (!db) return;
+  const { putCatalogStore } = await import("@/lib/store/firestore-catalog");
+  await putCatalogStore(db, {
+    ...store,
+    listOnMarket: store.listOnMarket !== false,
+  });
+}
+
 export async function saveMerchantOnboardingDraft(
   uid: string,
   payload: Omit<MerchantOnboardingDraft, "updatedAt"> & { updatedAt?: string },

@@ -128,8 +128,13 @@ export default function OnboardPage() {
         setMerchantAuth(saved);
       }
     }
+    // Resume live slug from Firebase so republish merges into the same store
+    const cloudSlug = merchant.profile?.storeSlugs?.[0];
+    if (cloudSlug) {
+      setSlug((prev) => prev || cloudSlug);
+    }
     setHydrated(true);
-  }, [merchant.ready, merchant.profile?.onboardingDraft, hydrated]);
+  }, [merchant.ready, merchant.profile?.onboardingDraft, merchant.profile?.storeSlugs, hydrated]);
 
   useEffect(() => {
     return onMetaMaskAccountsChanged((accounts) => {
@@ -215,18 +220,16 @@ export default function OnboardPage() {
           merchantDisplayName:
             merchant.profile?.displayName || merchant.user?.displayName || undefined,
           visaReceive,
-          existingSlug: slug,
+          existingSlug: slug || merchant.profile?.storeSlugs?.[0] || null,
           boundWalletAddress,
+          listOnMarket:
+            merchant.profile?.governance?.listOnMarket !== false,
         }),
       });
       const raw = await res.text();
       let data: {
         reply: string;
-        store: {
-          slug: string;
-          name?: string;
-          skus?: Array<{ title: string }>;
-        } | null;
+        store: import("@/lib/store/types").StoreRecord | null;
         status?:
           | "published"
           | "need_price"
@@ -296,7 +299,11 @@ export default function OnboardPage() {
       if (data.store?.slug) {
         setSlug(data.store.slug);
         setRefreshKey((k) => k + 1);
-        await merchant.recordStoreSlug(data.store.slug);
+        if (data.status === "published" && data.store.skus?.length) {
+          await merchant.recordPublishedStore(data.store);
+        } else {
+          await merchant.recordStoreSlug(data.store.slug);
+        }
         await merchant.clearOnboardingDraft();
         // Keep working sheet after publish when API returned draft; else keep prior
         if (!nextDraft && draft) {
@@ -567,12 +574,14 @@ export default function OnboardPage() {
             undefined,
           visaReceive,
           boundWalletAddress,
+          listOnMarket:
+            merchant.profile?.governance?.listOnMarket !== false,
         }),
       });
       const data = (await res.json()) as {
         reply?: string;
         draft?: MerchantDraft | null;
-        store?: { slug: string } | null;
+        store?: import("@/lib/store/types").StoreRecord | null;
         status?: string;
       };
       if (data.draft) {
@@ -585,6 +594,9 @@ export default function OnboardPage() {
       }
       if (data.store?.slug) {
         setRefreshKey((k) => k + 1);
+        if (data.status === "published" && data.store.skus?.length) {
+          await merchant.recordPublishedStore(data.store);
+        }
       }
       setLines((prev) => [
         ...prev,

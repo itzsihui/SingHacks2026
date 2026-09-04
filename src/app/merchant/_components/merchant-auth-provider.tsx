@@ -22,6 +22,7 @@ import {
   merchantSetupComplete,
   saveMerchantGovernance,
   saveMerchantOnboardingDraft,
+  savePublishedStoreToCloud,
   signInMerchant,
   signOutMerchant,
   signUpMerchant,
@@ -32,6 +33,7 @@ import {
   type VisaReceiveAccount,
 } from "@/lib/firebase/merchant-auth";
 import { clearMerchantOnboardSession } from "@/lib/demo-session";
+import type { StoreRecord } from "@/lib/store/types";
 
 type MerchantAuthContextValue = {
   configured: boolean;
@@ -52,6 +54,8 @@ type MerchantAuthContextValue = {
   bindVisa: (visa: VisaReceiveAccount) => Promise<void>;
   saveGovernance: (gov: MerchantGovernance) => Promise<void>;
   recordStoreSlug: (slug: string) => Promise<void>;
+  /** Persist published catalog to Firestore so /market lists SKUs immediately. */
+  recordPublishedStore: (store: StoreRecord) => Promise<void>;
   saveOnboardingDraft: (
     payload: Omit<MerchantOnboardingDraft, "updatedAt"> & { updatedAt?: string },
   ) => Promise<void>;
@@ -169,6 +173,18 @@ export function MerchantAuthProvider({
       recordStoreSlug: async (slug) => {
         if (!user) return;
         await appendMerchantStoreSlug(user.uid, slug, {
+          email: user.email,
+          displayName: user.displayName,
+        });
+        await refreshProfile();
+      },
+      recordPublishedStore: async (store) => {
+        if (!user) return;
+        await savePublishedStoreToCloud({
+          ...store,
+          ownerUid: store.ownerUid || user.uid,
+        });
+        await appendMerchantStoreSlug(user.uid, store.slug, {
           email: user.email,
           displayName: user.displayName,
         });
