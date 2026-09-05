@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
     root: path.join(__dirname),
   },
   images: {
+    // Local only: AVG HTTPS scanning breaks Node's fetch of Unsplash.
+    unoptimized: process.env.NODE_ENV === "development",
     remotePatterns: [
       {
         protocol: "https",
