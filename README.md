@@ -73,11 +73,18 @@ Buyer spend limits (per tx / day / week). Merchant rails, price floors, market l
 
 ```mermaid
 flowchart LR
-  chat[BuyerChat] --> discover[Discover]
-  discover --> quarantine[Quarantine]
-  quarantine --> auth[Authorize]
-  auth --> visaRail[VisaScopedCard]
-  auth --> stableRail[VisaPoweredStablecoin_x402]
+  buyerPolicy[BuyerSpendLimits]
+  merchantPolicy[MerchantRailsAndFloors]
+  discover[Discover]
+  quarantine[Quarantine]
+  auth[Authorize]
+  settle[RLUSD_x402]
+
+  buyerPolicy --> auth
+  merchantPolicy --> auth
+  discover --> quarantine
+  quarantine --> auth
+  auth --> settle
 ```
 
 ---
