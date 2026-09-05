@@ -97,21 +97,8 @@ export default function OnboardPage() {
               ? cloud.quantities
               : nextDraft.lines.map((l) => String(l.quantity)),
           );
-          // Still probe for a live store so discovery panes only show when published
-          const candidate = merchant.profile?.storeSlugs?.[0] || null;
-          if (candidate) {
-            try {
-              const res = await fetch(`/s/${candidate}/catalog.json`, {
-                cache: "no-store",
-              });
-              if (res.ok) {
-                setSlug(candidate);
-                setRefreshKey((k) => k + 1);
-              }
-            } catch {
-              /* keep chat-only */
-            }
-          }
+          // Discovery / x402 panes stay hidden until publish succeeds this visit
+          setSlug(null);
           setHydrated(true);
           return;
         }
@@ -143,27 +130,9 @@ export default function OnboardPage() {
         }
       }
 
-      // Only restore discovery panes when the store actually exists live
-      const candidate =
-        session.onboard?.slug || merchant.profile?.storeSlugs?.[0] || null;
-      if (candidate) {
-        try {
-          const res = await fetch(`/s/${candidate}/catalog.json`, {
-            cache: "no-store",
-          });
-          if (res.ok) {
-            setSlug(candidate);
-            setRefreshKey((k) => k + 1);
-          } else {
-            // Stale slug (e.g. memory catalog wiped) — keep chat-only UI
-            setSlug(null);
-          }
-        } catch {
-          setSlug(null);
-        }
-      } else {
-        setSlug(null);
-      }
+      // Never restore slug from session/profile — shared or prior stores
+      // would flash Agent discovery + x402 before this merchant publishes.
+      setSlug(null);
       setHydrated(true);
     }
 
@@ -171,7 +140,6 @@ export default function OnboardPage() {
   }, [
     merchant.ready,
     merchant.profile?.onboardingDraft,
-    merchant.profile?.storeSlugs,
     hydrated,
   ]);
 
