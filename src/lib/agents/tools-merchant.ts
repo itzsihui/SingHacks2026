@@ -25,9 +25,7 @@ import { repo } from "@/lib/store/repo";
 import type { Sku, StoreRecord } from "@/lib/store/types";
 import {
   parseMerchantAddress,
-  verifyMerchantAuth,
   type ClassicAddress,
-  type HexAddress,
   type MerchantAuthProof,
 } from "@/lib/wallet/xrpl";
 
@@ -123,11 +121,14 @@ function draftFromInventory(inventory: ParsedInventory): MerchantDraft {
 }
 
 function needWalletResult(draft: MerchantDraft | null): MerchantToolResult {
+  // Should not happen when MERCHANT_ADDRESS is set — clarify only.
+  void draft;
   return {
-    status: "need_wallet",
+    status: "clarify",
     store: null,
-    reply: `Almost there — bind your XRPL receiving address once under Settings, then publish. We won’t ask for the seed again at publish time.`,
-    draft: draft ? enrichDraftWithFashion(draft) : null,
+    reply:
+      "Server MERCHANT_ADDRESS is missing or invalid. Set a classic XRPL r… address in env, then retry publish.",
+    draft: null,
   };
 }
 
@@ -154,8 +155,8 @@ export type MerchantPublishExtras = {
   /** When set, merge SKUs into this live store instead of creating a new one. */
   existingSlug?: string | null;
   /**
-   * Wallet already bound during merchant setup. Used as settlement address when
-   * no fresh XRPL seed signature is present — publish should not re-prompt.
+   * @deprecated Demo uses shared MERCHANT_ADDRESS from env for all merchants.
+   * Kept for API compatibility; ignored at publish.
    */
   boundWalletAddress?: string | null;
   /** Appear on /market (default true). From merchant governance. */
@@ -219,24 +220,17 @@ export async function mergeInventoryIntoStore(
   return repo.putStore(next);
 }
 
-async function resolvePayTo(
-  merchantAuth?: MerchantAuthProof | null,
-  boundWalletAddress?: string | null,
-): Promise<ClassicAddress | null> {
-  const signed = await verifyMerchantAuth(merchantAuth);
-  if (signed) return signed;
-  const bound = parseMerchantAddress(boundWalletAddress ?? undefined);
-  if (bound) return bound;
-  // Demo / prod fallback: MERCHANT_ADDRESS from env (no per-merchant seed required)
+/** Demo: every merchant store settles to the shared MERCHANT_ADDRESS env. */
+function resolvePayTo(): ClassicAddress | null {
   return parseMerchantAddress(config.merchantAddress);
 }
 
 async function publishStore(
   inventory: ParsedInventory,
-  merchantAuth?: MerchantAuthProof | null,
+  _merchantAuth?: MerchantAuthProof | null,
   extras?: MerchantPublishExtras,
 ): Promise<MerchantToolResult> {
-  const payTo = await resolvePayTo(merchantAuth, extras?.boundWalletAddress);
+  const payTo = resolvePayTo();
   if (!payTo) {
     return needWalletResult(draftFromInventory(inventory));
   }
@@ -657,5 +651,6 @@ export async function saveDraftToLiveStore(args: {
   return published;
 }
 
-export type { ClassicAddress, HexAddress, MerchantAuthProof };
+export type { ClassicAddress, MerchantAuthProof };
+export type HexAddress = ClassicAddress;
 export { draftLineKey };
