@@ -13,11 +13,21 @@ export function renderCatalog(store: StoreRecord, origin: string) {
     currency: config.tokenSymbol,
     network: config.network,
     rails: ["x402", "straitsx-virtual-card"],
+    updatedAt: store.updatedAt || store.createdAt,
     products: store.skus.map((sku) => ({
       id: sku.id,
       title: sku.title,
       description: { type: "plain", content: sku.description },
       availability: sku.quantity > 0 ? "in_stock" : "out_of_stock",
+      attributes: sku.attrs
+        ? {
+            subcategory: sku.attrs.subcategory,
+            color: sku.attrs.color,
+            size: sku.attrs.size,
+            material: sku.attrs.material,
+            tags: sku.attrs.tags,
+          }
+        : undefined,
       variants: [
         {
           id: sku.id,

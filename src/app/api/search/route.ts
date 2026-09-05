@@ -1,58 +1,124 @@
 import { originFromRequest } from "@/lib/protocol/llms-txt";
+import { shortlistRegistrySlugs } from "@/lib/protocol/registry-index";
+import { loadRegistryIndexForSearch } from "@/lib/protocol/registry-index-load";
 import { flattenMarketProducts } from "@/lib/protocol/registry";
-import { semanticSearchMarket } from "@/lib/protocol/semantic-search";
+import { renderReviews } from "@/lib/protocol/reviews";
+import {
+  semanticSearchMarket,
+  type ReviewSignal,
+} from "@/lib/protocol/semantic-search";
 import { repo } from "@/lib/store/repo";
 import type { StoreRecord } from "@/lib/store/types";
 
 export const runtime = "nodejs";
 
-function marketStores(stores: StoreRecord[]) {
-  return stores.filter((s) => s.listOnMarket !== false);
-}
-
 /**
- * Agent-facing semantic search.
- * GET /api/search?q=breathable+shirt+for+humid+weather&limit=8
+ * Fashion-aware agent search.
+ * 1) Shortlist stores via registry_index facets/titles
+ * 2) Load those catalogs + review aggregates
+ * 3) Keyword → embed → commerce re-rank (stock + verified reviews)
  *
- * Returns ranked product hits (not the registry). Falls back to keyword
- * when embeddings are unavailable.
+ * GET /api/search?q=breathable+linen+shirt&limit=8
+ * Optional: &subcategory=tops&color=navy
+ *
+ * Hits include scoreBreakdown: { semantic, stock, reviews, final }.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const q = url.searchParams.get("q")?.trim() || "";
   const limitRaw = Number(url.searchParams.get("limit") || "8");
   const limit = Number.isFinite(limitRaw) ? limitRaw : 8;
+  const subcategory = url.searchParams.get("subcategory")?.trim().toLowerCase();
+  const color = url.searchParams.get("color")?.trim().toLowerCase();
 
-  const listed = marketStores(await repo.listStores());
   const origin = originFromRequest(request);
-  // Support repeated q=shirt&q=tee — one embed batch for multi-noun hunts
-  const queries = url.searchParams.getAll("q").map((s) => s.trim()).filter(Boolean);
+  const queries = url.searchParams
+    .getAll("q")
+    .map((s) => s.trim())
+    .filter(Boolean);
   const qList = queries.length ? queries : q ? [q] : [];
-  if (qList.length === 0) {
+  if (qList.length === 0 && !subcategory && !color) {
     return Response.json(
       {
         error: "missing_query",
-        hint: "GET /api/search?q=linen+shirt+for+humid+weather",
+        hint: "GET /api/search?q=linen+shirt+for+humid+weather&subcategory=tops",
       },
       { status: 400, headers: { "cache-control": "no-store" } },
     );
   }
 
+  const index = await loadRegistryIndexForSearch(1000);
+  let candidates = index;
+  if (subcategory) {
+    candidates = candidates.filter((e) =>
+      e.subcategories.some((s) => s.toLowerCase() === subcategory),
+    );
+  }
+  if (color) {
+    candidates = candidates.filter((e) =>
+      e.colors.some((c) => c.toLowerCase().includes(color)),
+    );
+  }
+
+  const queryText =
+    qList.join(" · ") || [subcategory, color].filter(Boolean).join(" ");
+  const slugs = shortlistRegistrySlugs(candidates, queryText || "fashion", 40);
+
+  const stores: StoreRecord[] = [];
+  for (const slug of slugs) {
+    const store = await repo.getStore(slug);
+    if (store && store.listOnMarket !== false) stores.push(store);
+  }
+
+  if (stores.length === 0) {
+    const all = (await repo.listStores()).filter(
+      (s) => s.listOnMarket !== false,
+    );
+    stores.push(...all.slice(0, 40));
+  }
+
+  const reviewMap = new Map<string, ReviewSignal>();
+  await Promise.all(
+    stores.map(async (store) => {
+      const reviews = await repo.listReviews(store.slug);
+      const agg = renderReviews(store.slug, reviews).aggregate.bySku;
+      for (const [skuId, v] of Object.entries(agg)) {
+        reviewMap.set(`${store.slug}:${skuId}`, { avg: v.avg, n: v.n });
+      }
+    }),
+  );
+
+  const products = flattenMarketProducts(stores);
   const result = await semanticSearchMarket({
-    products: flattenMarketProducts(listed),
-    query: qList.join(" · "),
-    queries: qList,
+    products,
+    query: queryText,
+    queries: qList.length ? qList : [queryText],
     origin,
     limit,
+    embedCap: 200,
+    reviews: reviewMap,
   });
 
   return Response.json(
     {
       protocol: "borneo-agentic-storefront",
+      vertical: "fashion",
+      ranking: {
+        relevance: "semantic_or_keyword",
+        stock: "out_of_stock_demoted",
+        reviews: "verified_purchase_wilson_boost",
+      },
       ...result,
-      storeCount: listed.length,
+      storeCount: stores.length,
+      indexStoreCount: index.length,
+      shortlistedStores: slugs,
+      filters: {
+        subcategory: subcategory || null,
+        color: color || null,
+      },
       endpoints: {
         registry: `${origin}/registry.json`,
+        agentSitemap: `${origin}/agent-sitemap.json`,
         market: `${origin}/api/market`,
         search: `${origin}/api/search`,
       },

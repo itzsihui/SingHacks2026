@@ -188,6 +188,7 @@ export async function mergeInventoryIntoStore(
         price: Number(sku.price).toFixed(2),
         description: sku.description || prev.description,
         title: sku.title,
+        attrs: sku.attrs || prev.attrs,
       });
     } else {
       byTitle.set(key, {
@@ -196,6 +197,7 @@ export async function mergeInventoryIntoStore(
         description: sku.description,
         quantity: sku.quantity,
         price: Number(sku.price).toFixed(2),
+        attrs: sku.attrs,
       });
     }
   }
@@ -212,6 +214,7 @@ export async function mergeInventoryIntoStore(
         ? extras.listOnMarket !== false
         : existing.listOnMarket !== false,
     skus: [...byTitle.values()],
+    updatedAt: new Date().toISOString(),
   };
   return repo.putStore(next);
 }

@@ -7,8 +7,9 @@ Companion to [SKILL.md](SKILL.md). Read only when you need field-level detail.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/llms.txt` | Network prose index + how to buy |
-| GET | `/registry.json` | Machine index (`borneo-agentic-storefront` v1.0) |
-| GET | `/api/search?q=` | Intent / semantic product search |
+| GET | `/registry.json` | Fashion registry index (`borneo-agentic-storefront` v1.2, paginated; samples only) |
+| GET | `/agent-sitemap.json` | Crawl map of all listed stores + catalog URLs |
+| GET | `/api/search?q=` | Intent search (semantic + stock demotion + review boost; includes `scoreBreakdown`) |
 | GET | `/api/market?q=` | Keyword product list |
 | GET | `/s/{slug}/llms.txt` | Per-store agent instructions |
 | GET | `/s/{slug}/agent.json` | Agent card (payTo, endpoints) |

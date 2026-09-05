@@ -51,12 +51,27 @@ export function normalizeStoreRecord(raw: unknown): StoreRecord | null {
       const priceNum = Number(sku.price);
       if (!title || !Number.isFinite(quantity) || quantity <= 0) return null;
       if (!Number.isFinite(priceNum) || priceNum <= 0) return null;
+      let attrs: StoreRecord["skus"][number]["attrs"];
+      if (sku.attrs && typeof sku.attrs === "object") {
+        const a = sku.attrs as Record<string, unknown>;
+        const tags = Array.isArray(a.tags)
+          ? a.tags.map((t) => String(t || "").trim()).filter(Boolean)
+          : undefined;
+        attrs = {
+          subcategory: a.subcategory ? String(a.subcategory) : undefined,
+          color: a.color ? String(a.color) : undefined,
+          size: a.size ? String(a.size) : undefined,
+          material: a.material ? String(a.material) : undefined,
+          tags: tags?.length ? tags : undefined,
+        };
+      }
       return {
         id: String(sku.id || `sku-${index + 1}`),
         title,
         description: String(sku.description || title),
         quantity,
         price: priceNum.toFixed(2),
+        attrs,
       };
     })
     .filter((s): s is NonNullable<typeof s> => Boolean(s));
@@ -75,6 +90,9 @@ export function normalizeStoreRecord(raw: unknown): StoreRecord | null {
     listOnMarket: data.listOnMarket !== false,
     skus,
     createdAt: String(data.createdAt || new Date().toISOString()),
+    updatedAt: data.updatedAt
+      ? String(data.updatedAt)
+      : String(data.createdAt || new Date().toISOString()),
   };
 }
 

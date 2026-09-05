@@ -4,6 +4,7 @@ import {
   listCatalogStores,
   putCatalogStore,
 } from "@/lib/store/firestore-catalog";
+import { putRegistryIndexEntry } from "@/lib/store/firestore-registry-index";
 import { getServerFirestore } from "@/lib/firebase/server";
 import type { StoreRepo } from "@/lib/store/types-repo";
 import type { StoreRecord } from "@/lib/store/types";
@@ -12,6 +13,8 @@ import type { StoreRecord } from "@/lib/store/types";
  * Durable catalog on Firestore `stores/{slug}`; orders/mandates/reviews stay
  * on the in-memory fallback (same process). Sample demo shops remain visible
  * unless a published store reuses their slug.
+ *
+ * Also maintains fashion `registry_index/{slug}` for paginated discovery.
  */
 export function createFirestoreStoreRepo(fallback: StoreRepo): StoreRepo {
   async function mergeStoreMaps(
@@ -23,7 +26,6 @@ export function createFirestoreStoreRepo(fallback: StoreRepo): StoreRepo {
       bySlug.set(store.slug, { ...store, listOnMarket: true });
     }
     for (const store of local) {
-      // Prefer merchant-owned / non-sample over seed when present in memory
       const prev = bySlug.get(store.slug);
       if (!prev || store.ownerUid || prev.ownerUid) {
         bySlug.set(store.slug, store);
@@ -74,6 +76,17 @@ export function createFirestoreStoreRepo(fallback: StoreRepo): StoreRepo {
       if (db) {
         try {
           await putCatalogStore(db, saved);
+          const reviews = await fallback.listReviews(saved.slug);
+          let ratingAvg: number | null = null;
+          let ratingCount = 0;
+          if (reviews.length > 0) {
+            ratingCount = reviews.length;
+            ratingAvg =
+              Math.round(
+                (reviews.reduce((s, r) => s + r.rating, 0) / ratingCount) * 10,
+              ) / 10;
+          }
+          await putRegistryIndexEntry(db, saved, { ratingAvg, ratingCount });
         } catch (err) {
           console.warn(
             `[firestore-catalog] putStore(${saved.slug}) failed — client publish will retry`,

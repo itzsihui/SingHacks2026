@@ -37,6 +37,7 @@ export type MarketProduct = {
   visaReceiveLabel?: string;
   visaReceiveId?: string;
   imageUrl: string;
+  attrs?: import("@/lib/store/types").SkuAttrs;
 };
 
 export function buildRegistryStores(
@@ -67,24 +68,107 @@ export function buildRegistryStores(
     });
 }
 
-export function renderRegistryJson(stores: StoreRecord[], origin: string) {
+export function renderRegistryJson(
+  stores: StoreRecord[],
+  origin: string,
+  extras?: {
+    nextCursor?: string | null;
+    limit?: number;
+    indexed?: boolean;
+    facets?: boolean;
+  },
+) {
   const listed = buildRegistryStores(stores, origin);
   return {
     protocol: "borneo-agentic-storefront",
-    version: "1.0",
+    version: "1.1",
     description:
-      "Borneo network registry. Agents: start here, then open each store llms.txt. Do not scrape HTML.",
+      "Borneo fashion-focused network registry. Agents: start here, then open each store llms.txt. Do not scrape HTML. Use ?cursor=&limit= for pagination.",
     currency: config.tokenSymbol,
+    vertical: "fashion",
     market: `${origin}/market`,
     endpoints: {
       llmsTxt: `${origin}/llms.txt`,
       registry: `${origin}/registry.json`,
-      /** Intent search — returns ranked products, not this registry. */
       search: `${origin}/api/search`,
       marketApi: `${origin}/api/market`,
     },
+    pagination: {
+      limit: extras?.limit ?? listed.length,
+      nextCursor: extras?.nextCursor ?? null,
+      indexed: extras?.indexed ?? false,
+    },
     storeCount: listed.length,
     stores: listed,
+  };
+}
+
+/** Registry page from slim index entries (full SKU lists still on catalog.json). */
+export function renderRegistryJsonFromIndex(
+  entries: import("@/lib/protocol/registry-index").RegistryIndexEntry[],
+  origin: string,
+  extras: {
+    nextCursor: string | null;
+    limit: number;
+    totalHint?: number | null;
+  },
+) {
+  const stores = entries.map((e) => {
+    const base = `${origin}/s/${e.slug}`;
+    return {
+      slug: e.slug,
+      name: e.name,
+      llmsTxt: `${base}/llms.txt`,
+      agentCard: `${base}/agent.json`,
+      catalog: `${base}/catalog.json`,
+      reviews: `${base}/reviews.json`,
+      buyX402: `${base}/buy`,
+      checkoutStraitsX: `${base}/checkout`,
+      skuCount: e.skuCount,
+      inStockCount: e.inStockCount,
+      priceMin: e.priceMin,
+      priceMax: e.priceMax,
+      updatedAt: e.updatedAt,
+      catalogComplete: false as const,
+      ratingAvg: e.ratingAvg,
+      ratingCount: e.ratingCount,
+      fashion: {
+        subcategories: e.subcategories,
+        colors: e.colors,
+        sizes: e.sizes,
+        materials: e.materials,
+      },
+      skus: e.sampleTitles.slice(0, TITLE_CAP).map((title, i) => ({
+        id: `sample-${i + 1}`,
+        title,
+        price: String(e.priceMin || "0"),
+        quantity: 0,
+      })),
+    };
+  });
+  return {
+    protocol: "borneo-agentic-storefront",
+    version: "1.2",
+    description:
+      "Borneo fashion registry index. Sample SKUs only (catalogComplete:false) — always GET catalog.json for full inventory. Prefer /api/search for intent. Paginate with ?cursor=&limit=. Crawl map: /agent-sitemap.json.",
+    currency: config.tokenSymbol,
+    vertical: "fashion",
+    market: `${origin}/market`,
+    endpoints: {
+      llmsTxt: `${origin}/llms.txt`,
+      registry: `${origin}/registry.json`,
+      search: `${origin}/api/search`,
+      marketApi: `${origin}/api/market`,
+      agentSitemap: `${origin}/agent-sitemap.json`,
+    },
+    pagination: {
+      limit: extras.limit,
+      nextCursor: extras.nextCursor,
+      totalHint: extras.totalHint ?? null,
+      indexed: true,
+    },
+    storeCount: stores.length,
+    stores,
   };
 }
 
@@ -98,9 +182,9 @@ export function renderRootLlmsTxt(stores: StoreRecord[], origin: string) {
     `> Do not scrape HTML. Do not invent checkout pages.`,
     ``,
     `## How to buy`,
-    `1. Prefer intent search: GET ${origin}/api/search?q=your+need (ranked products).`,
-    `2. Or pick a store below / scan titles in registry.json.`,
-    `3. GET that store's llms.txt and catalog.json.`,
+    `1. Prefer intent search: GET ${origin}/api/search?q=your+need (ranked by relevance + stock + reviews).`,
+    `2. Or crawl ${origin}/agent-sitemap.json / scan ${origin}/registry.json.`,
+    `3. GET that store's llms.txt and catalog.json (full SKUs — registry samples are incomplete).`,
     `4. POST /buy (expect HTTP 402) or StraitsX /checkout.`,
     ``,
     `## Network index (${listed.length} store${listed.length === 1 ? "" : "s"})`,
@@ -126,6 +210,7 @@ export function renderRootLlmsTxt(stores: StoreRecord[], origin: string) {
 
   lines.push(`## Machine index`);
   lines.push(`- JSON registry: ${origin}/registry.json`);
+  lines.push(`- Agent sitemap: ${origin}/agent-sitemap.json`);
   lines.push(`- Semantic search: ${origin}/api/search?q=`);
   lines.push(`- Keyword market API: ${origin}/api/market?q=`);
   lines.push(`- Human marketplace: ${origin}/market`);
@@ -155,6 +240,7 @@ export function flattenMarketProducts(stores: StoreRecord[]): MarketProduct[] {
         visaReceiveLabel: store.visaReceive?.accountLabel,
         visaReceiveId: store.visaReceive?.receiveId,
         imageUrl: imageForProduct(sku.title, sku.description, sku.id),
+        attrs: sku.attrs,
       });
     }
   }
@@ -169,7 +255,20 @@ export function filterMarketProducts(
   if (!q) return products;
   const tokens = q.split(/\s+/).filter((t) => t.length > 1);
   return products.filter((p) => {
-    const hay = `${p.title} ${p.description || ""} ${p.id}`.toLowerCase();
+    const a = p.attrs;
+    const hay = [
+      p.title,
+      p.description || "",
+      p.id,
+      a?.subcategory,
+      a?.color,
+      a?.size,
+      a?.material,
+      ...(a?.tags ?? []),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
     if (hay.includes(q)) return true;
     // Token overlap on product fields only — never match storeSlug
     // (e.g. q="shirt" must not pull every SKU from "hackathon-shirts").

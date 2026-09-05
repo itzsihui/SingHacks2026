@@ -1,9 +1,21 @@
+/** Slim fashion snapshot persisted on published SKUs for agent discovery. */
+export type SkuAttrs = {
+  subcategory?: string;
+  color?: string;
+  size?: string;
+  material?: string;
+  /** Extra searchable tokens (fit, style, waistxinseam, …). */
+  tags?: string[];
+};
+
 export type Sku = {
   id: string;
   title: string;
   description: string;
   quantity: number;
   price: string;
+  /** Structured fashion facets for catalog + search (optional). */
+  attrs?: SkuAttrs;
 };
 
 /** Merchant Visa/fiat receiving account stamped onto the store at publish. */
@@ -30,6 +42,8 @@ export type StoreRecord = {
   listOnMarket?: boolean;
   skus: Sku[];
   createdAt: string;
+  /** Bumped on every putStore / inventory merge. */
+  updatedAt?: string;
 };
 
 export type CardMandate = {

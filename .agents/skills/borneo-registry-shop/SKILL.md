@@ -10,7 +10,8 @@ description: >
 license: MIT
 metadata:
   protocol: borneo-agentic-storefront
-  version: "1.0"
+  version: "1.2"
+  vertical: fashion
 ---
 
 # Borneo Registry Shop
@@ -44,9 +45,9 @@ Copy and track:
 
 ```
 - [ ] 1. Resolve ORIGIN
-- [ ] 2. GET /llms.txt or /registry.json
-- [ ] 3. Search or pick store + SKU
-- [ ] 4. GET /s/{slug}/catalog.json → lock quote
+- [ ] 2. GET /llms.txt or /agent-sitemap.json or /registry.json
+- [ ] 3. Prefer GET /api/search?q=… (ranked: relevance + stock + reviews)
+- [ ] 4. GET /s/{slug}/catalog.json → lock quote (full SKUs; registry samples are incomplete)
 - [ ] 5. Confirm with user
 - [ ] 6. Rail A x402 POST /buy  OR  Rail B Visa /checkout
 - [ ] 7. Show receipt + explorer / order URL
@@ -56,18 +57,31 @@ Copy and track:
 
 ```bash
 curl -sS "$ORIGIN/llms.txt"
+curl -sS "$ORIGIN/agent-sitemap.json" | jq .
 curl -sS "$ORIGIN/registry.json" | jq .
 ```
 
-`registry.json` shape (abridged): `protocol`, `version`, `currency`, `endpoints`, `stores[]` with `slug`, `llmsTxt`, `catalog`, `buyX402`, `checkoutStraitsX`, sample `skus`.
+`registry.json` shape (abridged): `protocol`, `version: "1.2"`, `vertical: "fashion"`, `currency`, `pagination`, `stores[]` with `slug`, `catalogComplete: false`, `inStockCount`, `ratingAvg`, fashion facets, sample `skus`. Always open `catalog.json` for the full list.
+
+Paginate:
+
+```bash
+curl -sS "$ORIGIN/registry.json?limit=50"
+curl -sS "$ORIGIN/registry.json?limit=50&cursor=LAST_SLUG"
+```
 
 ### 3. Find a product
 
-Prefer intent search:
+Prefer intent search (index shortlist → embed → commerce re-rank):
 
 ```bash
-curl -sS --get "$ORIGIN/api/search" --data-urlencode "q=YOUR NEED" | jq .
+curl -sS --get "$ORIGIN/api/search" \
+  --data-urlencode "q=breathable linen shirt" \
+  --data-urlencode "subcategory=tops" | jq .
 ```
+
+Hits include `scoreBreakdown: { semantic, stock, reviews, final }`. Out-of-stock is demoted; verified-purchase reviews boost lightly.
+Optional fashion filters: `subcategory`, `color`.
 
 Fallbacks:
 

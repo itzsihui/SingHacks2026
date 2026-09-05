@@ -34,6 +34,7 @@ function normalizeStore(store: StoreRecord): StoreRecord {
   return ensureUniqueSkuIds({
     ...assertStoreFinite(store),
     listOnMarket: store.listOnMarket !== false,
+    updatedAt: store.updatedAt || new Date().toISOString(),
   });
 }
 

@@ -18,6 +18,58 @@ export type ParsedInventory = {
   skus: Omit<Sku, "id">[];
 };
 
+/** Slim attrs stamped onto published SKUs for agent catalog/search. */
+export function skuAttrsFromFashion(
+  fashion?: FashionMeta | null,
+): Sku["attrs"] | undefined {
+  if (!fashion?.subcategory) return undefined;
+  const attrs = fashion.attrs ?? {};
+  const tags: string[] = [];
+  const push = (v?: string) => {
+    const t = String(v || "").trim();
+    if (t && !tags.some((x) => x.toLowerCase() === t.toLowerCase())) {
+      tags.push(t);
+    }
+  };
+  push(fashion.style);
+  push(attrs.fit);
+  push(attrs.length);
+  push(attrs.pattern);
+  push(attrs.finish);
+  if (attrs.waist && attrs.inseam) push(`${attrs.waist}x${attrs.inseam}`);
+  else {
+    push(attrs.waist);
+    push(attrs.inseam);
+  }
+  if (attrs.band && attrs.cup) push(`${attrs.band}${attrs.cup}`);
+  push(attrs.frameColor);
+  push(attrs.lensColor);
+  push(attrs.metal);
+
+  const size =
+    String(attrs.size || "").trim() ||
+    (attrs.waist && attrs.inseam
+      ? `${attrs.waist}x${attrs.inseam}`
+      : String(attrs.waist || "").trim()) ||
+    (attrs.band && attrs.cup
+      ? `${attrs.band}${attrs.cup}`
+      : String(attrs.band || "").trim()) ||
+    undefined;
+
+  const color =
+    String(attrs.color || attrs.frameColor || "").trim() || undefined;
+  const material =
+    String(attrs.material || attrs.metal || "").trim() || undefined;
+
+  return {
+    subcategory: fashion.subcategory,
+    color,
+    size,
+    material,
+    tags: tags.length ? tags : undefined,
+  };
+}
+
 export type MerchantDraftLine = {
   quantity: number;
   title: string;
@@ -544,6 +596,7 @@ export function completeDraftWithPrices(
         `${line.quantity} ${line.title} for ${price} ${config.tokenSymbol}`,
       quantity: line.quantity,
       price,
+      attrs: skuAttrsFromFashion(line.fashion),
     });
   }
 
@@ -916,6 +969,7 @@ export function toStore(
     visaReceive: extras?.visaReceive,
     listOnMarket: extras?.listOnMarket !== false,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     skus: parsed.skus.map((sku, index) => {
       const quantity = Number(sku.quantity);
       const priceNum = Number(sku.price);
@@ -935,6 +989,7 @@ export function toStore(
         description: sku.description,
         quantity,
         price: priceNum.toFixed(2),
+        attrs: sku.attrs,
       };
     }),
   });
