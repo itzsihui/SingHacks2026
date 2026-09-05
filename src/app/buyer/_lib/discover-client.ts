@@ -362,10 +362,20 @@ export async function discoverFashionPicks(
     .filter(Boolean);
 
   const primaryIntent = queries.join(" ") || intent;
-  const decomposed = decomposeIntent(primaryIntent);
+  const preferredHints =
+    profile?.items && profile.items.length > 0
+      ? profile.items
+      : searchQueries && searchQueries.length > 0
+        ? searchQueries
+        : undefined;
+  const decomposed = decomposeIntent(primaryIntent, {
+    itemHints: preferredHints,
+    occasion: profile?.occasion,
+    style: profile?.style,
+  });
   const hints = [
+    ...(preferredHints || []),
     ...decomposed.itemHints,
-    ...(profile?.items || []),
     ...extractItemHints(intent),
   ].filter(Boolean);
 

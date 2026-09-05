@@ -33,20 +33,17 @@ const SYSTEM = `You are Borneo's fashion buyer salesperson — a warm, sharp per
 
 You search LIVE seller catalogs later (registry + each store's products). Never invent SKUs, prices, or stock.
 
-Think like a salesperson in a store:
-- Read the FULL conversation and fix obvious typos (presetn→presentation, profesional→professional, gona→gonna).
+Think like a salesperson in a store — reason from CONTEXT, not a fixed keyword list:
+- Read the FULL conversation and fix obvious typos (presetn→presentation, profesional→professional, gona→gonna, hwo→how).
 - Meta / how-to first. If they ask how this works, what you do, or greet without naming clothes ("hi", "hello", "how does this work"), stay status "clarifying". Briefly explain the flow (chat → clarify → search live catalogs → pick → pay Visa/RLUSD) and ask what they want to wear. Do NOT invent an occasion or search.
 - Never treat the verb "work" in "how does this work" / "does it work" as a work/office outfit.
-- Occasion first (only when they actually describe dressing for something). If they mention a date, dinner, night out, presentation, interview, office, etc. without naming garments, infer they may want a complementary look (top + bottoms). Ask ONE short question: full set vs a single piece — unless they already said set/outfit/look.
-- Examples of the KIND of inference (do not copy wording):
-  · "going on a date" → offer a date-night set, ask set vs one piece if unclear
-  · presentation / interview / office / "outfit for work" → polished shirt + pants (or blouse + trousers)
-  · "full outfit" / "a set" / "the look" → search complementary pieces, not one random SKU
-  · clear single item ("a tee", "jeans") → search that item; do not over-ask
-- Prefer status "ready" once you know what to hunt. At most ONE clarifying question when the ask is occasion-only or truly vague. Never go "ready" on greetings or product-flow questions.
-- When ready, set status "ready" and give SHORT catalog search strings (product nouns merchants would list — NOT the user's full sentence).
-- For sets: searchQuery like "shirt pants", searchQueries ["shirt","pants"] (or blouse/trousers). Include jeans as a pants hunt — merchants often title bottoms "Jeans" not "Pants".
-- thoughts: 2–5 short first-person reasoning lines about THIS request. Do NOT claim you already found products.
+- Infer occasion + vibe dynamically from what they said (party, date, interview, beach, weekend, wedding, gym, … — open-ended). Put the inferred occasion in profile.occasion (short free text).
+- From that context, infer what garment *roles* fit (statement top, full set top+bottoms, dress, polished shirt+pants, etc.). Never blindly default to "tee".
+- Occasion-only / vibe-only asks ("going to a party", "something for the weekend"): prefer status "clarifying" with ONE short question (full set vs one piece, or casual vs dressier) unless they already named garments or said set/outfit/look. At most 1–2 clarifying questions total.
+- Clear single item ("a tee", "jeans") → status "ready"; search that item; do not over-ask.
+- When ready: SHORT catalog nouns merchants would list (shirt, pants, jeans, dress, blouse…) — NOT the user's full sentence. For complementary looks: searchQuery like "shirt pants", searchQueries ["shirt","pants","jeans"]. Include jeans when hunting bottoms.
+- thoughts (required, 2–5 lines): first-person reasoning about THIS ask — what occasion/vibe you inferred and why those garment roles. Do NOT claim you already found products. Example kind: "Party → festive/casual; complementary top + bottoms makes sense."
+- Fill profile.style / profile.items from your inference when known.
 
 Respond ONLY with JSON:
 {"reply":"string","suggestions":["chip1","chip2"],"status":"clarifying"|"ready","searchQuery":"optional","searchQueries":["optional"],"thoughts":["…"],"profile":{"category":"fashion","item":"","items":[],"style":"","color":"","budget":"","occasion":""}}`;
@@ -69,13 +66,29 @@ function lastAssistant(messages: ChatMessage[]) {
   return "";
 }
 
-function corpusText(messages: ChatMessage[]) {
-  return messages.map((m) => m.content).join(" ");
+function userCorpusText(messages: ChatMessage[]) {
+  return messages
+    .filter((m) => m.role === "user")
+    .map((m) => m.content)
+    .join(" ");
+}
+
+/** Common fashion typos before regex intent detection. */
+function normalizeFashionTypos(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/\bgng\b/g, "going")
+    .replace(/\bgona\b/g, "gonna")
+    .replace(/\bpresntaiton\b/g, "presentation")
+    .replace(/\bpresentaion\b/g, "presentation")
+    .replace(/\bpresenation\b/g, "presentation")
+    .replace(/\bpresentaton\b/g, "presentation")
+    .replace(/\bprofesional\b/g, "professional")
+    .replace(/\binterveiw\b/g, "interview");
 }
 
 function normalizeQuestion(text: string) {
-  return text
-    .toLowerCase()
+  return normalizeFashionTypos(text)
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -98,7 +111,7 @@ function isUselessClarify(text: string) {
 function detectItem(
   text: string,
 ): "tee" | "cap" | "compare" | "pants" | "outfit" | "unknown" {
-  const t = text.toLowerCase().replace(/t\s+shirt/g, "tshirt");
+  const t = normalizeFashionTypos(text).replace(/t\s+shirt/g, "tshirt");
   if (/\b(compare|vs|versus)\b/.test(t) && /\b(shirt|tee|cap|hat|tshirt)\b/.test(t)) {
     return "compare";
   }
@@ -181,23 +194,26 @@ function isMetaHelpAsk(text: string): boolean {
 }
 
 function detectOccasion(text: string): string | undefined {
-  const t = text.toLowerCase();
+  const t = normalizeFashionTypos(text);
   if (isMetaHelpAsk(t)) return undefined;
-  if (/\b(date|dinner|night\s+out|going\s+out)\b/.test(t)) return "date";
+  // Work/presentation before date — "date or presentation" in suggestions must not win
   if (
     /\b(present(?:ation)?|interview|meeting|office)\b/.test(t) ||
     isWorkOutfitAsk(t)
   ) {
     return "work";
   }
+  if (/\b(date|dinner|night\s+out|going\s+out)\b/.test(t)) return "date";
   return undefined;
 }
 
 function detectStyle(text: string): string | undefined {
-  const t = text.toLowerCase();
+  const t = normalizeFashionTypos(text);
   if (isMetaHelpAsk(t)) return undefined;
   if (
-    /\b(professional|formal|office|present|interview|meeting)\b/.test(t) ||
+    /\b(professional|formal|office|present(?:ation)?|interview|meeting)\b/.test(
+      t,
+    ) ||
     isWorkOutfitAsk(t)
   ) {
     return "professional";
@@ -232,35 +248,84 @@ function wantsExplicitSet(text: string): boolean {
   );
 }
 
+/** Vague dressing context without a named SKU — for fallback clarify, not a closed occasion map. */
+function isVagueOccasionAsk(text: string): boolean {
+  const t = normalizeQuestion(text);
+  if (!t || isMetaHelpAsk(t)) return false;
+  if (detectItem(t) !== "unknown") return false;
+  return (
+    /\b(?:what|wht)\s+(?:to|should i)\s+wear\b/.test(t) ||
+    /\b(?:going|gonna|might be|headed)\b/.test(t) ||
+    /\b(?:need|want|looking for)\s+something\b/.test(t) ||
+    /\b(?:outfit|clothes|wear|look)\s+for\b/.test(t) ||
+    /\bfor\s+(?:a|the|my)\s+\w+/.test(t) ||
+    Boolean(detectOccasion(t))
+  );
+}
+
+/** Weak default hunts that ignore occasion context. */
+function isWeakDefaultHunt(q?: string, queries?: string[]): boolean {
+  const parts = [q, ...(queries || [])]
+    .filter(Boolean)
+    .map((s) => s!.trim().toLowerCase());
+  if (!parts.length) return true;
+  const joined = parts.join(" ");
+  if (/^fashion\s+apparel$/.test(joined)) return true;
+  if (/^(tee|t-?shirt)$/.test(joined)) return true;
+  if (/^shirt\s+tee$/.test(joined)) return true;
+  if (
+    parts.length <= 2 &&
+    parts.every((p) => /^(shirt|tee|t-?shirt)$/.test(p)) &&
+    !parts.some((p) => /pants|jeans|dress|blouse/.test(p))
+  ) {
+    return true;
+  }
+  return false;
+}
+
 /** True when searchQuery is still the user's chat utterance, not catalog terms. */
 function looksLikeRawUtterance(q: string): boolean {
   const t = q.trim();
   if (!t) return true;
   if (t.split(/\s+/).length > 6) return true;
-  return /\b(i|im|i'm|wanna|want to|have to|gonna|looking for)\b/i.test(t);
+  return /\b(i|im|i'm|wanna|want to|have to|gonna|looking for|might be)\b/i.test(
+    t,
+  );
 }
+
+const COMPLEMENTARY_SET = {
+  searchQuery: "shirt pants jeans",
+  searchQueries: ["shirt", "pants", "jeans"],
+} as const;
 
 function catalogSearchFromProfile(
   messages: ChatMessage[],
   profile?: FashionProfile,
 ): { searchQuery: string; searchQueries: string[] } {
-  const corpus = corpusText(messages);
+  const corpus = userCorpusText(messages);
   const item = detectItem(corpus);
   const style = profile?.style || detectStyle(corpus);
 
   if (profile?.items && profile.items.length > 0) {
     return {
       searchQuery: profile.items.join(" "),
-      searchQueries: profile.items.slice(0, 3),
+      searchQueries: profile.items.slice(0, 4),
     };
   }
 
-  if (item === "outfit" || style === "professional" || style === "date") {
+  // Occasion / vibe from LLM or regex — complementary set, never bare tee
+  if (
+    profile?.occasion ||
+    style === "professional" ||
+    style === "date" ||
+    item === "outfit"
+  ) {
     return {
-      searchQuery: "shirt pants jeans",
-      searchQueries: ["shirt", "pants", "jeans"],
+      searchQuery: COMPLEMENTARY_SET.searchQuery,
+      searchQueries: [...COMPLEMENTARY_SET.searchQueries],
     };
   }
+
   if (item === "cap" || profile?.item === "cap") {
     return { searchQuery: "cap", searchQueries: ["cap"] };
   }
@@ -284,11 +349,15 @@ function catalogSearchFromProfile(
     .filter(Boolean)
     .join(" ")
     .trim();
-  if (fromProfile) {
+  if (fromProfile && !/^tee$/i.test(fromProfile)) {
     return { searchQuery: fromProfile, searchQueries: [fromProfile] };
   }
 
-  return { searchQuery: "fashion apparel", searchQueries: ["shirt", "pants"] };
+  // No occasion, no item — complementary apparel bias (not tee-only)
+  return {
+    searchQuery: COMPLEMENTARY_SET.searchQuery,
+    searchQueries: [...COMPLEMENTARY_SET.searchQueries],
+  };
 }
 
 function inferSearchQuery(
@@ -302,7 +371,7 @@ function enrichProfile(
   messages: ChatMessage[],
   profile?: FashionProfile,
 ): FashionProfile {
-  const corpus = corpusText(messages);
+  const corpus = userCorpusText(messages);
   const item = detectItem(corpus);
   const style = detectStyle(corpus);
   const occasion = detectOccasion(corpus);
@@ -311,7 +380,8 @@ function enrichProfile(
     category: "fashion",
     ...profile,
   };
-  if (!next.occasion && occasion) next.occasion = occasion;
+  // Latest user-inferred occasion wins over a stale/wrong profile.occasion
+  if (occasion) next.occasion = occasion;
   if (!next.item) {
     next.item =
       item === "cap"
@@ -326,7 +396,7 @@ function enrichProfile(
                 ? "tee"
                 : profile?.item;
   }
-  if (!next.style && style) next.style = style;
+  if (style) next.style = style;
   if (
     !next.items?.length &&
     (item === "outfit" ||
@@ -343,8 +413,9 @@ function enrichProfile(
     if (color) next.color = color[1];
   }
   if (!next.budget) {
+    // Require a budget keyword or a digit-led amount — never capture a lone "."
     const budget = lower.match(
-      /\b(?:under|below|max|budget)?\s*([\d.]+)\s*(usdc|xsgd|usd|sgd)?\b/,
+      /\b(?:under|below|max|budget)\s*([\d]+(?:\.\d+)?)\s*(usdc|xsgd|usd|sgd|rlusd)?\b/,
     );
     if (budget) {
       next.budget = `${budget[1]} ${(budget[2] || "RLUSD").toUpperCase()}`;
@@ -354,14 +425,15 @@ function enrichProfile(
 }
 
 /**
- * Stops clarifying loops: known item → search. Never re-ask "what apparel?".
+ * Thin rails only: meta-help, anti-loop, preserve LLM occasion reasoning.
+ * Do not stomp clarifying vibes into a blind tee hunt.
  */
 export function ensureConversationProgress(
   messages: ChatMessage[],
   result: SalespersonResult,
 ): SalespersonResult {
   const turns = userTurnCount(messages);
-  const corpus = corpusText(messages);
+  const corpus = userCorpusText(messages);
   const latest = lastUser(messages);
   const item = detectItem(corpus);
   const profile = enrichProfile(messages, result.profile);
@@ -378,7 +450,7 @@ export function ensureConversationProgress(
         normalizeQuestion(prevAsk).includes("formal")));
 
   // "how does this work" / bare hi — never jump to catalog search
-  if (isMetaHelpAsk(latest) || (turns === 1 && isMetaHelpAsk(corpus))) {
+  if (isMetaHelpAsk(latest)) {
     return {
       ...result,
       status: "clarifying",
@@ -397,69 +469,104 @@ export function ensureConversationProgress(
 
   const forceReady = () => {
     const catalog = catalogSearchFromProfile(messages, profile);
+    const useLlmQuery =
+      result.searchQuery &&
+      !looksLikeRawUtterance(result.searchQuery) &&
+      !isWeakDefaultHunt(result.searchQuery, result.searchQueries);
     return {
       ...result,
       status: "ready" as const,
-      searchQuery: catalog.searchQuery,
-      searchQueries: result.searchQueries?.length
-        ? result.searchQueries
-        : catalog.searchQueries,
+      searchQuery: useLlmQuery ? result.searchQuery : catalog.searchQuery,
+      searchQueries:
+        useLlmQuery && result.searchQueries?.length
+          ? result.searchQueries
+          : catalog.searchQueries,
       thoughts: result.thoughts?.length
         ? result.thoughts
         : [
             `Reading: “${lastUser(messages).slice(0, 120)}”`,
-            `Mapped to catalog hunt: ${catalog.searchQuery}`,
+            profile.occasion
+              ? `Occasion “${profile.occasion}” → complementary catalog hunt: ${catalog.searchQuery}`
+              : `Mapped to catalog hunt: ${catalog.searchQuery}`,
           ],
       profile,
       suggestions: [] as string[],
-      reply: "I'll search seller catalogs on the Borneo network for that now.",
+      reply:
+        result.reply && !/found|here'?s what/i.test(result.reply)
+          ? result.reply
+          : "I'll search seller catalogs on the Borneo network for that now.",
     };
   };
 
   if (result.status === "ready") {
     const catalog = catalogSearchFromProfile(messages, profile);
     const rawQ = result.searchQuery?.trim() || "";
+    const llmQueries = result.searchQueries?.filter(
+      (q) => q.trim() && !looksLikeRawUtterance(q),
+    );
+    const weak =
+      looksLikeRawUtterance(rawQ) ||
+      isWeakDefaultHunt(rawQ, llmQueries) ||
+      !rawQ;
+    // Occasion context must not collapse to shirt+tee
+    const upgradeForOccasion =
+      Boolean(profile.occasion || profile.items?.length) &&
+      isWeakDefaultHunt(rawQ, llmQueries);
+
     const searchQuery =
-      rawQ && !looksLikeRawUtterance(rawQ) ? rawQ : catalog.searchQuery;
+      !weak && !upgradeForOccasion ? rawQ : catalog.searchQuery;
     const searchQueries =
-      result.searchQueries?.filter((q) => q.trim() && !looksLikeRawUtterance(q))
-        .length
-        ? result.searchQueries!.filter(
-            (q) => q.trim() && !looksLikeRawUtterance(q),
-          )
+      llmQueries?.length && !upgradeForOccasion && !isWeakDefaultHunt(rawQ, llmQueries)
+        ? llmQueries
         : catalog.searchQueries;
+
+    const nextProfile =
+      profile.items?.length || !profile.occasion
+        ? profile
+        : {
+            ...profile,
+            items: searchQueries.slice(0, 4),
+            item: profile.item || searchQueries.slice(0, 2).join(" and "),
+          };
+
     return {
       ...result,
-      profile,
+      profile: nextProfile,
       searchQuery,
       searchQueries,
       thoughts: result.thoughts?.length
         ? result.thoughts
         : [
-            `Intent → catalog terms: ${searchQuery}`,
+            nextProfile.occasion
+              ? `Inferred occasion: ${nextProfile.occasion}`
+              : `Intent → catalog terms: ${searchQuery}`,
             searchQueries.length > 1
-              ? `Looking across sellers for a set: ${searchQueries.join(" + ")}`
+              ? `Hunting complementary pieces: ${searchQueries.join(" + ")}`
               : `Scanning merchant products for “${searchQuery}”`,
           ],
       suggestions: [],
     };
   }
 
-  // Named garment / explicit set → search. Occasion-only clarify stays clarifying.
-  if (item !== "unknown") {
-    return forceReady();
-  }
-
-  // Date/dinner with no garment yet: keep a useful "set vs piece?" ask on turn 1
-  const occasion = detectOccasion(corpus) || profile.occasion;
+  // Preserve clarifying when vibe/occasion is underspecified — don't forceReady into tee
   if (
     result.status === "clarifying" &&
+    item === "unknown" &&
     turns <= 2 &&
-    occasion &&
+    !uselessNow &&
     !wantsExplicitSet(corpus) &&
-    !uselessNow
+    (result.llm !== "deterministic" ||
+      Boolean(profile.occasion) ||
+      Boolean(result.thoughts?.length) ||
+      isVagueOccasionAsk(latest) ||
+      Boolean(detectOccasion(corpus)))
   ) {
     return { ...result, profile };
+  }
+
+  // Named garment / explicit set → search
+  if (item !== "unknown") {
+    return forceReady();
   }
 
   if (repeated || turns >= 3 || uselessNow) {
@@ -508,9 +615,11 @@ export function runDeterministicSalesperson(
 ): SalespersonResult {
   const turns = userTurnCount(messages);
   const latest = lastUser(messages);
-  const item = detectItem(corpusText(messages));
-  const lower = latest.toLowerCase();
-  const style = detectStyle(corpusText(messages));
+  const userCorpus = userCorpusText(messages);
+  const item = detectItem(userCorpus);
+  const lower = normalizeFashionTypos(latest);
+  const style = detectStyle(userCorpus);
+  const occasionNow = detectOccasion(userCorpus);
 
   const profile = enrichProfile(messages, {
     category: "fashion",
@@ -526,8 +635,9 @@ export function runDeterministicSalesperson(
               : item === "tee"
                 ? "tee"
                 : undefined,
-    items: item === "outfit" ? ["shirt", "pants"] : undefined,
+    items: item === "outfit" ? ["shirt", "pants", "jeans"] : undefined,
     style,
+    occasion: occasionNow,
   });
 
   if (/\b(graphic|plain|oversized|black|white|budget|under|0\.0|professional|formal)/i.test(lower)) {
@@ -537,7 +647,7 @@ export function runDeterministicSalesperson(
     if (/\b(professional|formal)\b/i.test(lower)) profile.style = "professional";
     if (/\bblack\b/i.test(lower)) profile.color = "black";
     if (/\bwhite\b/i.test(lower)) profile.color = "white";
-    const budget = lower.match(/under\s+([\d.]+)\s*(usdc|xsgd|usd)?/i);
+    const budget = lower.match(/under\s+([\d]+(?:\.\d+)?)\s*(usdc|xsgd|usd|rlusd)?/i);
     if (budget) profile.budget = `${budget[1]} ${(budget[2] || "RLUSD").toUpperCase()}`;
   }
 
@@ -556,7 +666,7 @@ export function runDeterministicSalesperson(
     };
   }
 
-  if (isMetaHelpAsk(latest) || (turns === 1 && isMetaHelpAsk(corpusText(messages)))) {
+  if (isMetaHelpAsk(latest)) {
     return {
       reply: META_HELP_REPLY,
       suggestions: META_HELP_SUGGESTIONS,
@@ -572,13 +682,15 @@ export function runDeterministicSalesperson(
   if (item === "outfit" && turns >= 1) {
     const catalog = catalogSearchFromProfile(messages, profile);
     const isDate =
-      profile.occasion === "date" ||
-      detectOccasion(corpusText(messages)) === "date" ||
-      detectStyle(corpusText(messages)) === "date";
+      (profile.occasion || occasionNow) === "date" || style === "date";
+    const isWork =
+      (profile.occasion || occasionNow) === "work" || style === "professional";
     return ensureConversationProgress(messages, {
       reply: isDate
         ? "Date night — I'll pull a top + bottoms set from seller catalogs."
-        : "Got it — I'll look across seller catalogs for a complementary top + bottoms set.",
+        : isWork
+          ? "Presentation / work look — I'll pull a polished top + bottoms from seller catalogs."
+          : "Got it — I'll look across seller catalogs for a complementary top + bottoms set.",
       suggestions: [],
       status: "ready",
       searchQuery: catalog.searchQuery,
@@ -586,59 +698,121 @@ export function runDeterministicSalesperson(
       thoughts: [
         isDate
           ? "They're dressing for a date and asked for a set."
-          : "They want a full look, not a single SKU.",
+          : isWork
+            ? "Occasion is a presentation/work — polished complementary pieces, not a casual tee."
+            : "They want a full look, not a single SKU.",
         "Hunting complementary pieces: shirt + pants/jeans across merchants.",
       ],
       profile: {
         ...profile,
         item: "shirt and pants",
         items: ["shirt", "pants", "jeans"],
-        occasion: profile.occasion || (isDate ? "date" : profile.occasion),
-        style: profile.style || (isDate ? "date" : profile.style),
+        occasion:
+          profile.occasion ||
+          occasionNow ||
+          (isDate ? "date" : isWork ? "work" : profile.occasion),
+        style:
+          profile.style ||
+          (isDate ? "date" : isWork ? "professional" : profile.style),
       },
       llm: "deterministic",
     });
   }
 
-  // Follow-up after occasion ask: "Full set" / "Date-night set"
-  if (
-    turns >= 2 &&
-    (wantsExplicitSet(corpusText(messages)) ||
-      /\bfull\s+set\b/i.test(lastUser(messages)))
-  ) {
-    const catalog = catalogSearchFromProfile(messages, {
-      ...profile,
-      items: ["shirt", "pants", "jeans"],
-    });
-    const isDate =
-      profile.occasion === "date" ||
-      detectOccasion(corpusText(messages)) === "date";
-    return ensureConversationProgress(messages, {
-      reply: isDate
-        ? "Perfect — searching seller catalogs for a date-night top + bottoms."
-        : "Perfect — searching seller catalogs for a complementary set.",
-      suggestions: [],
-      status: "ready",
-      searchQuery: catalog.searchQuery,
-      searchQueries: catalog.searchQueries,
-      thoughts: [
-        "They confirmed they want a full set.",
-        "I'll rank shirts/tops and pants/jeans across merchants.",
-      ],
-      profile: {
+  // Follow-up after occasion ask: "Full set" / "Date-night set" / piece / dressier
+  if (turns >= 2 && item === "unknown") {
+    const follow = normalizeFashionTypos(lastUser(messages));
+    const priorOccasion =
+      profile.occasion || detectOccasion(userCorpus);
+    if (
+      wantsExplicitSet(userCorpus) ||
+      /\bfull\s+set\b/i.test(follow)
+    ) {
+      const catalog = catalogSearchFromProfile(messages, {
         ...profile,
-        item: "shirt and pants",
         items: ["shirt", "pants", "jeans"],
-        occasion: profile.occasion || (isDate ? "date" : profile.occasion),
-      },
-      llm: "deterministic",
-    });
+        occasion: priorOccasion,
+      });
+      const isDate = priorOccasion === "date";
+      const isWork = priorOccasion === "work";
+      return ensureConversationProgress(messages, {
+        reply: isDate
+          ? "Perfect — searching seller catalogs for a date-night top + bottoms."
+          : isWork
+            ? "Perfect — searching seller catalogs for a polished presentation set."
+            : "Perfect — searching seller catalogs for a complementary set.",
+        suggestions: [],
+        status: "ready",
+        searchQuery: catalog.searchQuery,
+        searchQueries: catalog.searchQueries,
+        thoughts: [
+          priorOccasion
+            ? `They confirmed a full set for “${priorOccasion}”.`
+            : "They confirmed they want a full set.",
+          "I'll rank shirts/tops and pants/jeans across merchants.",
+        ],
+        profile: {
+          ...profile,
+          item: "shirt and pants",
+          items: ["shirt", "pants", "jeans"],
+          occasion: priorOccasion || profile.occasion,
+        },
+        llm: "deterministic",
+      });
+    }
+    if (/\bdressier|dress\b/i.test(follow)) {
+      return ensureConversationProgress(messages, {
+        reply: "On it — searching for dressier options across seller catalogs.",
+        suggestions: [],
+        status: "ready",
+        searchQuery: "dress shirt",
+        searchQueries: ["dress", "shirt"],
+        thoughts: [
+          priorOccasion
+            ? `Dressier lean for “${priorOccasion}”.`
+            : "They want something dressier than a basic tee.",
+          "Hunting dresses and polished tops across merchants.",
+        ],
+        profile: {
+          ...profile,
+          item: "dress",
+          items: ["dress", "shirt"],
+          style: profile.style || "dressier",
+          occasion: priorOccasion || profile.occasion,
+        },
+        llm: "deterministic",
+      });
+    }
+    if (/\bjust a (top|shirt|tee|piece)|one piece|only a\b/i.test(follow)) {
+      return ensureConversationProgress(messages, {
+        reply: "Got it — searching seller catalogs for a statement top.",
+        suggestions: [],
+        status: "ready",
+        searchQuery: "shirt tee",
+        searchQueries: ["shirt", "tee"],
+        thoughts: [
+          "They want a single piece, not a full set.",
+          "Hunting shirts/tees across merchants.",
+        ],
+        profile: {
+          ...profile,
+          item: "shirt",
+          items: ["shirt", "tee"],
+          occasion: priorOccasion || profile.occasion,
+        },
+        llm: "deterministic",
+      });
+    }
   }
 
-  // Occasion without a named garment — ask set vs single piece (salesperson move)
-  const occasion =
-    detectOccasion(corpusText(messages)) || profile.occasion;
-  if (occasion && item === "unknown" && turns === 1) {
+  // Occasion / vague vibe without a named garment — one clarify (not a keyword→outfit table)
+  const occasion = occasionNow || profile.occasion;
+  if (
+    (occasion || isVagueOccasionAsk(latest)) &&
+    item === "unknown" &&
+    turns === 1
+  ) {
+    const label = occasion || "that";
     if (occasion === "date") {
       return {
         reply:
@@ -649,16 +823,31 @@ export function runDeterministicSalesperson(
           "Occasion is a date; a complementary set is a natural recommendation.",
           "Checking whether they want the full look or a single item before I search catalogs.",
         ],
-        profile: { ...profile, occasion: "date", style: profile.style || "date" },
+        profile: {
+          ...profile,
+          occasion: "date",
+          style: profile.style || "date",
+        },
         llm: "deterministic",
       };
     }
     return {
       reply:
-        "For that, a polished top + bottoms usually works. Want a full set, or one piece?",
-      suggestions: ["Full set", "Just a shirt", "Pants"],
+        occasion === "work"
+          ? "For that, a polished top + bottoms usually works. Want a full set, or one piece?"
+          : "Got it — sounds like you're dressing for something. Want a full set (top + bottoms), or just one piece?",
+      suggestions: ["Full set", "Just a top", "Something dressier"],
       status: "clarifying",
-      profile: { ...profile, occasion },
+      thoughts: [
+        occasion
+          ? `Inferred occasion: ${label} — complementary pieces usually work better than a random tee.`
+          : "They're describing a vibe/occasion without naming a garment yet.",
+        "Ask set vs one piece before hunting seller catalogs.",
+      ],
+      profile: {
+        ...profile,
+        ...(occasion ? { occasion } : {}),
+      },
       llm: "deterministic",
     };
   }
@@ -669,6 +858,9 @@ export function runDeterministicSalesperson(
         "Happy to help. Tee, cap, pants, or a full outfit for something like a date or presentation?",
       suggestions: ["A t-shirt", "A cap", "Date-night set", "Presentation outfit"],
       status: "clarifying",
+      thoughts: [
+        "Ask is still open-ended — need a garment or occasion before searching.",
+      ],
       profile,
       llm: "deterministic",
     };
@@ -720,7 +912,7 @@ export function runDeterministicSalesperson(
     };
   }
 
-  if (/\bpants?\b|\bjeans\b|\btrousers?\b/.test(corpusText(messages).toLowerCase()) && turns >= 2) {
+  if (/\bpants?\b|\bjeans\b|\btrousers?\b/.test(userCorpus.toLowerCase()) && turns >= 2) {
     return {
       reply: "I'll search the Borneo network for pants now.",
       suggestions: [],
@@ -757,11 +949,8 @@ export function runDeterministicSalesperson(
     };
   }
 
-  // Fallback: generic apparel terms across ALL seller catalogs — never pin to one demo store.
-  const catalog = catalogSearchFromProfile(messages, {
-    ...profile,
-    item: profile.item || "tee",
-  });
+  // Fallback: complementary apparel across sellers — never pin to tee-only or one demo store.
+  const catalog = catalogSearchFromProfile(messages, profile);
   const styleHint =
     profile.style ||
     (/\bgraphic\b/i.test(lower)
@@ -775,9 +964,17 @@ export function runDeterministicSalesperson(
     status: "ready",
     searchQuery: catalog.searchQuery,
     searchQueries: catalog.searchQueries,
+    thoughts: [
+      profile.occasion
+        ? `Occasion “${profile.occasion}” → hunting ${catalog.searchQuery}`
+        : `Catalog hunt: ${catalog.searchQuery}`,
+    ],
     profile: {
       ...profile,
-      item: profile.item || "tee",
+      item: profile.item || catalog.searchQueries.slice(0, 2).join(" and "),
+      items: profile.items?.length
+        ? profile.items
+        : catalog.searchQueries.slice(0, 4),
       ...(styleHint ? { style: styleHint } : {}),
       category: "fashion",
     },
@@ -793,7 +990,11 @@ async function runOpenAI(
 
   try {
     const turns = userTurnCount(messages);
-    const itemKnown = detectItem(corpusText(messages)) !== "unknown";
+    const corpus = userCorpusText(messages);
+    const itemKnown = detectItem(corpus) !== "unknown";
+    const vagueVibe =
+      !itemKnown &&
+      (isVagueOccasionAsk(lastUser(messages)) || Boolean(detectOccasion(corpus)));
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -802,17 +1003,26 @@ async function runOpenAI(
       },
       body: JSON.stringify({
         model: process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini",
-        temperature: 0.3,
+        temperature: 0.35,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM },
           ...messages.map((m) => ({ role: m.role, content: m.content })),
+          ...(vagueVibe && turns <= 2
+            ? [
+                {
+                  role: "system" as const,
+                  content:
+                    "No garment noun yet — infer occasion/vibe from context. Prefer status clarifying with one short question (set vs piece / casual vs dressier). Do NOT default searchQuery to tee. thoughts must explain your inference. If ready, use complementary catalog nouns (shirt, pants, jeans, dress…).",
+                },
+              ]
+            : []),
           ...(turns >= 2 && itemKnown
             ? [
                 {
                   role: "system" as const,
                   content:
-                    "Enough context — respond with status ready and a searchQuery now. Do not ask another clarifying question.",
+                    "Enough context — respond with status ready and a searchQuery now. Do not ask another clarifying question. Include thoughts.",
                 },
               ]
             : turns >= 3
@@ -820,7 +1030,7 @@ async function runOpenAI(
                   {
                     role: "system" as const,
                     content:
-                      "User has clarified enough — respond with status ready and a searchQuery now.",
+                      "User has clarified enough — respond with status ready and catalog-noun searchQuery/searchQueries. Include thoughts explaining the occasion→garment mapping. Never default to tee alone.",
                   },
                 ]
               : []),
@@ -865,13 +1075,19 @@ async function runBedrock(
         : new BedrockRuntimeClient({ region: config.bedrockRegion });
 
     const turns = userTurnCount(messages);
-    const itemKnown = detectItem(corpusText(messages)) !== "unknown";
+    const corpus = userCorpusText(messages);
+    const itemKnown = detectItem(corpus) !== "unknown";
+    const vagueVibe =
+      !itemKnown &&
+      (isVagueOccasionAsk(lastUser(messages)) || Boolean(detectOccasion(corpus)));
     const forceReady =
-      turns >= 2 && itemKnown
-        ? "\n\nEnough context — respond with status ready and a searchQuery now. Do not ask another clarifying question."
-        : turns >= 3
-          ? "\n\nUser has clarified enough — respond with status ready and a searchQuery now."
-          : "";
+      vagueVibe && turns <= 2
+        ? "\n\nNo garment noun yet — infer occasion/vibe from context. Prefer status clarifying with one short question (set vs piece / casual vs dressier). Do NOT default searchQuery to tee. thoughts must explain your inference."
+        : turns >= 2 && itemKnown
+          ? "\n\nEnough context — respond with status ready and a searchQuery now. Do not ask another clarifying question. Include thoughts."
+          : turns >= 3
+            ? "\n\nUser has clarified enough — respond with status ready and catalog-noun searchQuery/searchQueries. Include thoughts. Never default to tee alone."
+            : "";
 
     const response = await client.send(
       new ConverseCommand({
@@ -881,7 +1097,7 @@ async function runBedrock(
           role: m.role,
           content: [{ text: m.content }],
         })),
-        inferenceConfig: { maxTokens: 512, temperature: 0.2 },
+        inferenceConfig: { maxTokens: 512, temperature: 0.3 },
       }),
     );
 

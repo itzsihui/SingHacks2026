@@ -54,19 +54,37 @@ export function extractItemHints(message: string): string[] {
 
 export function extractBudget(message: string): string | undefined {
   const match = message.match(
-    /under\s+([\d.]+)\s*(xsgd|usd|sgd)?/i,
+    /\b(?:under|below|max|budget)\s*([\d]+(?:\.\d+)?)\s*(xsgd|usd|sgd|rlusd)?/i,
   );
   if (!match) return undefined;
   const unit = (match[2] || "RLUSD").toUpperCase();
   return `${match[1]} ${unit}`;
 }
 
-export function decomposeIntent(message: string): DecomposedIntent {
-  const itemHints = extractItemHints(message);
+export function decomposeIntent(
+  message: string,
+  opts?: {
+    itemHints?: string[];
+    occasion?: string;
+    style?: string;
+  },
+): DecomposedIntent {
+  const fromMessage = extractItemHints(message);
+  // Prefer salesperson profile / searchQueries over weak token extract
+  const itemHints =
+    opts?.itemHints && opts.itemHints.length > 0
+      ? opts.itemHints.map(normalize).filter(Boolean)
+      : fromMessage;
   const budget = extractBudget(message);
   const compare = /\b(compare|vs|versus)\b/i.test(message);
 
   const constraints: string[] = ["Category: apparel / fashion"];
+  if (opts?.occasion) {
+    constraints.push(`Occasion: ${opts.occasion}`);
+  }
+  if (opts?.style) {
+    constraints.push(`Style: ${opts.style}`);
+  }
   if (itemHints.length) {
     constraints.push(`Looking for: ${itemHints.join(", ")}`);
   } else {

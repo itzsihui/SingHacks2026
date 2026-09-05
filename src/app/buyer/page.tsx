@@ -832,6 +832,7 @@ export default function BuyerPage() {
 
         const profile = data.profile ?? priorProfile;
         const ready = data.status === "ready" && Boolean(data.searchQuery);
+        const thoughtBullets = (data.thoughts || []).filter(Boolean);
 
         const assistant: ChatMessage = {
           role: "assistant",
@@ -840,6 +841,21 @@ export default function BuyerPage() {
               ? "I'll search the Borneo network for that now."
               : data.reply || "I'll search the Borneo network for that now."
             : data.reply || "Tell me a bit more about what you want.",
+          // Clarifying turns: show occasion inference before catalog search
+          ...(!ready && thoughtBullets.length
+            ? {
+                steps: [
+                  {
+                    id: "parse",
+                    title: "Parse fashion intent",
+                    status: "complete" as const,
+                    capability: "privileged" as const,
+                    description: "Salesperson intent from conversation",
+                    bullets: thoughtBullets,
+                  },
+                ] satisfies ChainStep[],
+              }
+            : {}),
         };
 
         const withAssistant = [...messagesRef.current, assistant];
