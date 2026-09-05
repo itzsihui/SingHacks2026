@@ -44,9 +44,22 @@ export function LandingProblemImpact() {
           </p>
         </Reveal>
 
+        <Reveal className="mt-14 border-t border-white/10 pt-12" delay={0.05}>
+          <p className="font-[family-name:var(--font-syne)] text-[clamp(2.75rem,7vw,4.25rem)] font-semibold leading-none tracking-tight text-[var(--landing-jade)]">
+            1 <span className="text-[var(--landing-fog)]/35">→</span> ~0.1
+          </p>
+          <p className="mt-5 max-w-[40ch] font-[family-name:var(--font-syne)] text-xl font-medium leading-snug text-[var(--landing-fog)] md:text-2xl">
+            For every buyer agent, roughly a tenth of an open catalog
+          </p>
+          <p className="mt-3 max-w-[48ch] text-sm leading-relaxed text-[var(--landing-fog)]/50">
+            Demand for shopping agents outruns open, HTTP-shoppable supply —
+            most inventory is HTML-only or trapped in two chat apps.
+          </p>
+        </Reveal>
+
         <div className="mt-16 grid gap-10 border-t border-white/10 pt-12 sm:grid-cols-3 sm:gap-8">
           {IMPACT.map((item, i) => (
-            <Reveal key={item.value} delay={0.08 * i}>
+            <Reveal key={item.value} delay={0.08 * (i + 1)}>
               <p className="font-[family-name:var(--font-syne)] text-[clamp(3rem,8vw,4.5rem)] font-semibold leading-none tracking-tight text-[var(--landing-jade)]">
                 {item.value}
               </p>
