@@ -80,59 +80,100 @@ export default function OnboardPage() {
 
   useEffect(() => {
     if (!merchant.ready || hydrated) return;
-    const cloud = merchant.profile?.onboardingDraft;
-    if (cloud?.draft) {
-      const nextDraft = normalizeDraft(cloud.draft as MerchantDraft);
-      if (nextDraft) {
-        setDraft(nextDraft);
+
+    async function hydrate() {
+      const cloud = merchant.profile?.onboardingDraft;
+      if (cloud?.draft) {
+        const nextDraft = normalizeDraft(cloud.draft as MerchantDraft);
+        if (nextDraft) {
+          setDraft(nextDraft);
+          setPrices(
+            cloud.prices?.length
+              ? cloud.prices
+              : nextDraft.lines.map((l) => l.price ?? ""),
+          );
+          setQuantities(
+            cloud.quantities?.length
+              ? cloud.quantities
+              : nextDraft.lines.map((l) => String(l.quantity)),
+          );
+          // Still probe for a live store so discovery panes only show when published
+          const candidate = merchant.profile?.storeSlugs?.[0] || null;
+          if (candidate) {
+            try {
+              const res = await fetch(`/s/${candidate}/catalog.json`, {
+                cache: "no-store",
+              });
+              if (res.ok) {
+                setSlug(candidate);
+                setRefreshKey((k) => k + 1);
+              }
+            } catch {
+              /* keep chat-only */
+            }
+          }
+          setHydrated(true);
+          return;
+        }
+      }
+
+      const session = readDemoSession();
+      if (session.onboard) {
+        setMessage(session.onboard.message || DEFAULT_ONBOARD_MESSAGE);
+        setLines(
+          session.onboard.lines?.length
+            ? session.onboard.lines
+            : DEFAULT_ONBOARD_LINES,
+        );
+        setDraft(normalizeDraft(session.onboard.draft));
+        const nextDraft = normalizeDraft(session.onboard.draft);
         setPrices(
-          cloud.prices?.length
-            ? cloud.prices
-            : nextDraft.lines.map((l) => l.price ?? ""),
+          session.onboard.prices?.length
+            ? session.onboard.prices
+            : nextDraft?.lines.map((l) => l.price ?? "") ?? [],
         );
         setQuantities(
-          cloud.quantities?.length
-            ? cloud.quantities
-            : nextDraft.lines.map((l) => String(l.quantity)),
+          session.onboard.quantities?.length
+            ? session.onboard.quantities
+            : nextDraft?.lines.map((l) => String(l.quantity)) ?? [],
         );
-        setHydrated(true);
-        return;
+        const saved = session.onboard.merchantAuth as MerchantAuthProof | null;
+        if (saved?.address && saved.signature && saved.message) {
+          setMerchantAuth(saved);
+        }
       }
-    }
-    const session = readDemoSession();
-    if (session.onboard) {
-      setMessage(session.onboard.message || DEFAULT_ONBOARD_MESSAGE);
-      setLines(
-        session.onboard.lines?.length
-          ? session.onboard.lines
-          : DEFAULT_ONBOARD_LINES,
-      );
-      setDraft(normalizeDraft(session.onboard.draft));
-      const nextDraft = normalizeDraft(session.onboard.draft);
-      setPrices(
-        session.onboard.prices?.length
-          ? session.onboard.prices
-          : nextDraft?.lines.map((l) => l.price ?? "") ?? [],
-      );
-      setQuantities(
-        session.onboard.quantities?.length
-          ? session.onboard.quantities
-          : nextDraft?.lines.map((l) => String(l.quantity)) ?? [],
-      );
-      setSlug(session.onboard.slug);
-      if (session.onboard.slug) setRefreshKey((k) => k + 1);
-      const saved = session.onboard.merchantAuth as MerchantAuthProof | null;
-      if (saved?.address && saved.signature && saved.message) {
-        setMerchantAuth(saved);
+
+      // Only restore discovery panes when the store actually exists live
+      const candidate =
+        session.onboard?.slug || merchant.profile?.storeSlugs?.[0] || null;
+      if (candidate) {
+        try {
+          const res = await fetch(`/s/${candidate}/catalog.json`, {
+            cache: "no-store",
+          });
+          if (res.ok) {
+            setSlug(candidate);
+            setRefreshKey((k) => k + 1);
+          } else {
+            // Stale slug (e.g. memory catalog wiped) — keep chat-only UI
+            setSlug(null);
+          }
+        } catch {
+          setSlug(null);
+        }
+      } else {
+        setSlug(null);
       }
+      setHydrated(true);
     }
-    // Resume live slug from Firebase so republish merges into the same store
-    const cloudSlug = merchant.profile?.storeSlugs?.[0];
-    if (cloudSlug) {
-      setSlug((prev) => prev || cloudSlug);
-    }
-    setHydrated(true);
-  }, [merchant.ready, merchant.profile?.onboardingDraft, merchant.profile?.storeSlugs, hydrated]);
+
+    void hydrate();
+  }, [
+    merchant.ready,
+    merchant.profile?.onboardingDraft,
+    merchant.profile?.storeSlugs,
+    hydrated,
+  ]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -278,10 +319,10 @@ export default function OnboardPage() {
       ) {
         /* clarify without draft — leave existing sheet alone */
       }
-      if (data.store?.slug) {
+      if (data.status === "published" && data.store?.slug) {
         setSlug(data.store.slug);
         setRefreshKey((k) => k + 1);
-        if (data.status === "published" && data.store.skus?.length) {
+        if (data.store.skus?.length) {
           await merchant.recordPublishedStore(data.store);
         } else {
           await merchant.recordStoreSlug(data.store.slug);
