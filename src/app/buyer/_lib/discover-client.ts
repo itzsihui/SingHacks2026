@@ -7,9 +7,10 @@ import {
   wantsInjectionDemo,
   type QuarantinedSku,
 } from "./catalog-quarantine";
-import { decomposeIntent, extractItemHints } from "./intent-decompose";
+import { decomposeIntent } from "./intent-decompose";
 
-type MarketApiProduct = {
+/** Product shape from GET /api/search (market catalog + rank score). */
+type SearchApiProduct = {
   id: string;
   title: string;
   description?: string;
@@ -22,133 +23,12 @@ type MarketApiProduct = {
   visaReceiveLabel?: string;
   visaReceiveId?: string;
   imageUrl?: string;
+  score: number;
 };
 
-type MarketPayload = {
-  products: MarketApiProduct[];
+type SearchPayload = {
+  products?: SearchApiProduct[];
 };
-
-const STOP = new Set([
-  "a",
-  "an",
-  "the",
-  "i",
-  "im",
-  "i'm",
-  "want",
-  "wanna",
-  "need",
-  "get",
-  "buy",
-  "looking",
-  "for",
-  "with",
-  "my",
-  "me",
-  "to",
-  "and",
-  "or",
-  "of",
-  "in",
-  "on",
-  "at",
-  "it",
-  "its",
-  "is",
-  "are",
-  "be",
-  "as",
-  "long",
-  "really",
-  "just",
-  "something",
-  "anything",
-  "please",
-  "under",
-  "below",
-  "about",
-  "going",
-  "hang",
-  "out",
-  "friends",
-  "comfortable",
-  "comfort",
-  "key",
-  "preferred",
-  "preference",
-  "color",
-  "colour",
-  "budget",
-  "usdc",
-  "xsgd",
-  "usd",
-  "sgd",
-  "soon",
-  "have",
-  "has",
-  "had",
-  "full",
-  "nice",
-  "good",
-  "best",
-  "today",
-  "tomorrow",
-  "gonna",
-  "gotta",
-  "casual",
-  "style",
-  "date",
-  "night",
-  "dinner",
-]);
-
-/** Product-noun synonyms only — never occasion/style words (those diluted ranking). */
-const PRODUCT_SYNONYMS: Record<string, string[]> = {
-  tee: ["tee", "tshirt", "shirt"],
-  tshirt: ["tee", "tshirt", "shirt"],
-  shirt: ["shirt", "tee", "tshirt", "blouse", "top"],
-  blouse: ["blouse", "shirt", "top"],
-  top: ["top", "shirt", "tee", "blouse"],
-  cap: ["cap", "hat", "beanie"],
-  hat: ["hat", "cap", "beanie"],
-  jeans: ["jeans", "denim", "pants", "trousers"],
-  jean: ["jeans", "denim", "pants", "trousers"],
-  pants: ["pants", "jeans", "denim", "trousers"],
-  pant: ["pants", "jeans", "denim", "trousers"],
-  trousers: ["trousers", "pants", "jeans"],
-  trouser: ["trousers", "pants", "jeans"],
-  shorts: ["shorts", "pants"],
-  short: ["shorts", "pants"],
-  sneakers: ["sneakers", "shoes", "trainers"],
-  sneaker: ["sneakers", "shoes", "trainers"],
-  shoes: ["shoes", "sneakers", "trainers"],
-  shoe: ["shoes", "sneakers", "trainers"],
-};
-
-/** Occasion → garment hunt when the shopper didn't name pieces. */
-const OCCASION_GARMENTS: Record<string, string[]> = {
-  formal: ["shirt", "pants", "blouse"],
-  professional: ["shirt", "pants", "blouse"],
-  dressy: ["shirt", "pants", "blouse"],
-  presentation: ["shirt", "pants", "blouse"],
-  interview: ["shirt", "pants", "blouse"],
-  office: ["shirt", "pants", "trousers"],
-  meeting: ["shirt", "pants"],
-  outfit: ["shirt", "pants", "jeans"],
-  set: ["shirt", "pants", "jeans"],
-};
-
-/** Plurals that must not lose their last "s" (stem("jeans") → "jean" broke synonyms). */
-const KEEP_PLURAL = new Set([
-  "jeans",
-  "pants",
-  "trousers",
-  "shorts",
-  "shoes",
-  "sneakers",
-  "glasses",
-  "clothes",
-]);
 
 function normalize(value: string) {
   return value
@@ -159,134 +39,6 @@ function normalize(value: string) {
     .trim();
 }
 
-function stem(s: string) {
-  if (KEEP_PLURAL.has(s)) return s;
-  if (s.endsWith("ies") && s.length > 4) return `${s.slice(0, -3)}y`;
-  if (s.endsWith("sses")) return s.slice(0, -2);
-  if (s.endsWith("s") && !s.endsWith("ss") && s.length > 3) return s.slice(0, -1);
-  return s;
-}
-
-function tokensFrom(text: string): string[] {
-  return normalize(text)
-    .split(/\s+/)
-    .map(stem)
-    .filter((t) => t.length > 1 && !STOP.has(t) && !/^\d+(\.\d+)?$/.test(t));
-}
-
-function expandProductToken(token: string): string[] {
-  const syn = PRODUCT_SYNONYMS[token] || PRODUCT_SYNONYMS[stem(token)];
-  if (!syn) return [token];
-  return [...new Set(syn.map((s) => (KEEP_PLURAL.has(s) ? s : stem(s))))];
-}
-
-function expandOccasionTokens(tokens: string[]): string[] {
-  const out: string[] = [];
-  for (const t of tokens) {
-    const garments = OCCASION_GARMENTS[t];
-    if (garments) out.push(...garments);
-  }
-  return out;
-}
-
-/**
- * Build ranking terms from catalog nouns only.
- * Occasion words expand to garments when no product noun is present yet.
- */
-function queryTerms(
-  intent: string,
-  profile?: FashionProfile | null,
-  hints?: string[],
-): string[] {
-  const parts = [intent, profile?.item, profile?.color, ...(hints || [])]
-    .filter(Boolean)
-    .join(" ");
-  const raw = tokensFrom(parts);
-  const productHits = raw.filter((t) => PRODUCT_SYNONYMS[t] || PRODUCT_SYNONYMS[stem(t)]);
-  const occasionHits = expandOccasionTokens(raw);
-
-  const seed =
-    productHits.length > 0
-      ? raw.filter((t) => !OCCASION_GARMENTS[t])
-      : [...raw.filter((t) => !OCCASION_GARMENTS[t]), ...occasionHits];
-
-  // Multi-item profile: prefer those nouns over free-text noise
-  if (profile?.items?.length) {
-    seed.push(...profile.items.map((i) => normalize(i)));
-  }
-
-  const expanded = new Set<string>();
-  for (const t of seed) {
-    for (const e of expandProductToken(stem(t))) expanded.add(e);
-  }
-
-  // Style is cosmetic preference — only keep if it is a color-like leftover, never occasion expansion
-  if (profile?.style) {
-    const styleTok = tokensFrom(profile.style).filter(
-      (t) => !OCCASION_GARMENTS[t] && t !== "casual" && t !== "professional",
-    );
-    for (const t of styleTok) {
-      for (const e of expandProductToken(t)) expanded.add(e);
-    }
-  }
-
-  return [...expanded];
-}
-
-function rankTitle(product: MarketApiProduct, q: QuarantinedSku): string {
-  return q.safeForFashionRank
-    ? product.title
-    : `${product.id} ${q.displayTitle}`;
-}
-
-/** Score using quarantined display title — never raw hostile instructions. */
-function scoreProduct(
-  product: MarketApiProduct,
-  q: QuarantinedSku,
-  terms: string[],
-): number {
-  if (terms.length === 0) return 0;
-  const titleSource = rankTitle(product, q);
-  const titleTokens = new Set(tokensFrom(`${product.id} ${titleSource}`));
-  const title = normalize(titleSource);
-  const id = normalize(product.id);
-  let score = 0;
-  let hits = 0;
-
-  for (const term of terms) {
-    if (titleTokens.has(term) || id === term) {
-      hits += 1;
-      score += 50;
-      continue;
-    }
-    if (title.includes(term) || id.includes(term)) {
-      hits += 1;
-      score += 42;
-      continue;
-    }
-    // Tight partials only (avoid "top" ⊆ "stop"-style noise on short stems)
-    if (term.length < 3) continue;
-    for (const ht of titleTokens) {
-      if (ht.length < 3) continue;
-      if (ht.startsWith(term) || term.startsWith(ht)) {
-        hits += 1;
-        score += 22;
-        break;
-      }
-    }
-  }
-
-  if (hits === 0) return 0;
-
-  score += Math.round((hits / terms.length) * 20);
-
-  if (!q.safeForFashionRank) {
-    score = Math.max(1, Math.round(score * 0.05));
-  }
-
-  return score;
-}
-
 function parseBudgetMax(profile?: FashionProfile | null): number | null {
   if (!profile?.budget) return null;
   const m = profile.budget.match(/([\d.]+)/);
@@ -295,8 +47,14 @@ function parseBudgetMax(profile?: FashionProfile | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function rankTitle(product: SearchApiProduct, q: QuarantinedSku): string {
+  return q.safeForFashionRank
+    ? product.title
+    : `${product.id} ${q.displayTitle}`;
+}
+
 function toPick(
-  product: MarketApiProduct,
+  product: SearchApiProduct,
   q: QuarantinedSku,
   score: number,
 ): MarketProductPick {
@@ -324,7 +82,7 @@ function toPick(
 function considerPick(
   scored: Map<string, MarketProductPick>,
   flaggedSeen: Map<string, QuarantinedSku>,
-  product: MarketApiProduct,
+  product: SearchApiProduct,
   q: QuarantinedSku,
   score: number,
   demoIntent: boolean,
@@ -340,6 +98,28 @@ function considerPick(
   if (!existing || pick.score > existing.score) scored.set(pick.id, pick);
 }
 
+async function fetchSearchHits(
+  queries: string[],
+  limit: number,
+): Promise<SearchApiProduct[]> {
+  const params = new URLSearchParams({
+    limit: String(limit),
+  });
+  for (const q of queries) {
+    if (q.trim()) params.append("q", q.trim());
+  }
+  const res = await fetch(`/api/search?${params}`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Market search failed (HTTP ${res.status})`);
+  }
+  const data = (await res.json()) as SearchPayload;
+  return data.products ?? [];
+}
+
+/**
+ * Discover apparel picks via the same GET /api/search agents use,
+ * then apply buyer extras (exclude, budget, quarantine, sizing, outfit mix).
+ */
 export async function discoverFashionPicks(
   intent: string,
   profile?: FashionProfile | null,
@@ -350,6 +130,7 @@ export async function discoverFashionPicks(
   flagged: QuarantinedSku[];
   decomposed: ReturnType<typeof decomposeIntent>;
   storeSlugs: string[];
+  searchUrls: string[];
 }> {
   const queries = (
     searchQueries?.length
@@ -373,32 +154,17 @@ export async function discoverFashionPicks(
     occasion: profile?.occasion,
     style: profile?.style,
   });
-  const hints = [
-    ...(preferredHints || []),
-    ...decomposed.itemHints,
-    ...extractItemHints(intent),
-  ].filter(Boolean);
 
-  const termSources = [
-    ...queries,
-    profile?.item,
-    profile?.color,
-    ...hints,
-  ].filter(Boolean) as string[];
-  let terms = queryTerms(termSources.join(" ") || intent, profile, hints);
-  const userAskedHackathon = /\bhackathon\b/i.test(
-    [intent, ...queries].join(" "),
-  );
-  if (!userAskedHackathon) {
-    terms = terms.filter((t) => t !== "hackathon");
-  }
+  const limitPerQuery = queries.length > 1 ? 10 : 12;
+  const searchParams = new URLSearchParams({
+    limit: String(limitPerQuery),
+  });
+  for (const q of queries) searchParams.append("q", q);
+  const searchUrls = [`/api/search?${searchParams.toString()}`];
 
-  const res = await fetch("/api/market", { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error(`Market search failed (HTTP ${res.status})`);
-  }
-  const data = (await res.json()) as MarketPayload;
-  let products = data.products ?? [];
+  // One request embeds all nouns in a single OpenAI round-trip
+  const productsRaw = await fetchSearchHits(queries, limitPerQuery);
+  let products = productsRaw;
 
   const exclude = new Set(
     (opts?.excludeSkuIds || []).map((id) => id.toLowerCase()),
@@ -429,49 +195,19 @@ export async function discoverFashionPicks(
   const flaggedSeen = new Map<string, QuarantinedSku>();
   const scored = new Map<string, MarketProductPick>();
   const sizing = opts?.sizing;
+  const huntingGarments = queries.some(isGarmentNounQuery);
 
   for (const product of products) {
     const key = `${product.storeSlug}:${product.id}`;
     const q = qByKey.get(key);
     if (!q) continue;
-    const base = scoreProduct(product, q, terms);
-    considerPick(
-      scored,
-      flaggedSeen,
-      product,
-      q,
-      base > 0 ? base + sizingBoost(product, q, sizing) : 0,
-      demoIntent,
-    );
-  }
-
-  // Per-query pass so "shirt" + "pants" each get strong role hits
-  if (queries.length > 1) {
-    for (const qText of queries) {
-      const qTerms = queryTerms(qText, profile).filter(
-        (t) => userAskedHackathon || t !== "hackathon",
-      );
-      const ranked: Array<{
-        p: MarketApiProduct;
-        q: QuarantinedSku;
-        score: number;
-      }> = [];
-      for (const p of products) {
-        const q = qByKey.get(`${p.storeSlug}:${p.id}`);
-        if (!q) continue;
-        const base = scoreProduct(p, q, qTerms);
-        if (base <= 0) continue;
-        ranked.push({
-          p,
-          q,
-          score: base + sizingBoost(p, q, sizing),
-        });
-      }
-      ranked.sort((a, b) => b.score - a.score);
-      for (const { p, q, score } of ranked.slice(0, 3)) {
-        considerPick(scored, flaggedSeen, p, q, score + 12, demoIntent);
-      }
-    }
+    const base = Math.max(1, Math.round(product.score * 100));
+    const total =
+      base +
+      sizingBoost(product, q, sizing) +
+      occasionFitDelta(product, q, profile) +
+      garmentQueryFitDelta(product, q, queries);
+    considerPick(scored, flaggedSeen, product, q, total, demoIntent);
   }
 
   for (const q of quarantined) {
@@ -482,10 +218,17 @@ export async function discoverFashionPicks(
 
   let picks = [...scored.values()].sort((a, b) => b.score - a.score);
 
-  if (picks.length > 1) {
-    const top = picks[0]!.score;
-    const floor = Math.max(18, top * 0.35);
-    picks = picks.filter((p) => p.score >= floor);
+  // Outfit / shirt+pants hunts: drop accessories that snuck through
+  if (huntingGarments) {
+    picks = picks.filter((p) => {
+      const role = apparelRole(p.title);
+      if (role === "top" || role === "bottom" || role === "outer") return true;
+      const hay = normalize(`${p.id} ${p.title} ${p.description || ""}`);
+      return queries.some((gq) => {
+        const n = normalize(gq);
+        return n.length >= 3 && hay.includes(n);
+      });
+    });
   }
 
   const limit = queries.length > 1 ? 6 : 5;
@@ -493,23 +236,6 @@ export async function discoverFashionPicks(
   picks = (
     queries.length > 1 ? outfitFirst : diversifyByStore(outfitFirst, limit)
   ).slice(0, limit);
-
-  if (picks.length === 0 && terms.length > 0) {
-    for (const product of products) {
-      const key = `${product.storeSlug}:${product.id}`;
-      const q = qByKey.get(key);
-      if (!q) continue;
-      if (!q.safeForFashionRank && !demoIntent) continue;
-      const hay = normalize(`${product.id} ${rankTitle(product, q)}`);
-      if (terms.some((t) => hay.includes(t))) {
-        picks.push(toPick(product, q, 25));
-      }
-    }
-    picks = diversifyByStore(
-      picks.sort((a, b) => b.score - a.score),
-      limit,
-    ).slice(0, limit);
-  }
 
   const flagged = [...flaggedSeen.values()];
   const storeSlugs = [
@@ -519,7 +245,7 @@ export async function discoverFashionPicks(
     ]),
   ];
 
-  return { picks, flagged, decomposed, storeSlugs };
+  return { picks, flagged, decomposed, storeSlugs, searchUrls };
 }
 
 function apparelRole(title: string): "top" | "bottom" | "outer" | "other" {
@@ -566,7 +292,7 @@ function garmentKind(title: string): "top" | "bottom" | "shoe" | "other" {
 
 /** Soft boost when listing size matches buyer prefs — never filters out misses. */
 function sizingBoost(
-  product: MarketApiProduct,
+  product: SearchApiProduct,
   q: QuarantinedSku,
   sizing?: BuyerSizingPrefs | null,
 ): number {
@@ -592,6 +318,176 @@ function sizingBoost(
     bonus += 35;
   }
   return bonus;
+}
+
+function isProfessionalOccasion(profile?: FashionProfile | null): boolean {
+  const occasion = (profile?.occasion || "").toLowerCase();
+  const style = (profile?.style || "").toLowerCase();
+  if (
+    /\b(hackathon|party|date)\b/.test(occasion) ||
+    /\b(hackathon|party|date)\b/.test(style)
+  ) {
+    return false;
+  }
+  return (
+    occasion === "work" ||
+    style === "professional" ||
+    /\b(present|interview|office|meeting|formal|work|gala)\b/.test(occasion) ||
+    /\b(present|interview|office|meeting|formal)\b/.test(style)
+  );
+}
+
+function isSocialOccasion(profile?: FashionProfile | null): boolean {
+  const occasion = (profile?.occasion || "").toLowerCase();
+  const style = (profile?.style || "").toLowerCase();
+  return (
+    occasion === "date" ||
+    occasion === "party" ||
+    style === "date" ||
+    style === "party" ||
+    /\b(date|party|dinner|club|night)\b/.test(occasion)
+  );
+}
+
+function isHackathonOccasion(profile?: FashionProfile | null): boolean {
+  const occasion = (profile?.occasion || "").toLowerCase();
+  const style = (profile?.style || "").toLowerCase();
+  return (
+    occasion === "hackathon" ||
+    style === "hackathon" ||
+    /\bhackathon\b/.test(occasion)
+  );
+}
+
+/** Occasion fit — formal vs party vs hackathon must surface different SKUs. */
+function occasionFitDelta(
+  product: SearchApiProduct,
+  q: QuarantinedSku,
+  profile?: FashionProfile | null,
+): number {
+  if (!profile?.occasion && !profile?.style) return 0;
+  const title = rankTitle(product, q);
+  const hay = normalize(`${product.id} ${title} ${product.description || ""}`);
+
+  if (isHackathonOccasion(profile)) {
+    if (/\b(poison|lanyard)\b/.test(hay)) return -1000;
+    let d = 0;
+    if (
+      /\b(poplin|shirt\s*dress|ballet\s*flat|pointed|mary\s*jane|gala)\b/.test(
+        hay,
+      )
+    ) {
+      d -= 40;
+    }
+    if (
+      /\b(hackathon|tee|tshirt|oversized|camp\s*shirt|treeblend)\b/.test(hay)
+    ) {
+      d += 55;
+    }
+    if (/\b(crop|palm|jogger)\b/.test(hay)) d += 25;
+    if (/\bdress\b/.test(hay) && !/\btee\b/.test(hay)) d -= 25;
+    return d;
+  }
+
+  if (isProfessionalOccasion(profile)) {
+    if (
+      /\b(crop|tank|palm|graphic|sundress|resort|jogger|beach|rash|swim|hackathon|tee|tshirt|treeblend)\b/.test(
+        hay,
+      )
+    ) {
+      return -1000;
+    }
+    let d = 0;
+    if (/\b(oversized|tropical|weekend heat|camp\s*collar)\b/.test(hay)) {
+      d -= 25;
+    }
+    if (/\bshorts?\b/.test(hay) && !/\bshirt\b/.test(hay)) d -= 40;
+    if (
+      /\b(poplin|tailored|chino|linen\s*pant|wide\s*linen|henley|oxford|button)\b/.test(
+        hay,
+      )
+    ) {
+      d += 55;
+    }
+    if (/\b(shirt\s*dress)\b/.test(hay)) d += 35;
+    if (/\b(camp\s*shirt|linen\s*camp)\b/.test(hay)) d += 8;
+    if (/\b(pant|trouser|chino)\b/.test(hay)) d += 50;
+    if (/\b(ballet\s*flat|pointed\s*flat|mary\s*jane)\b/.test(hay)) d += 20;
+    return d;
+  }
+
+  if (isSocialOccasion(profile)) {
+    let d = 0;
+    if (
+      /\b(rash|jogger|daypack|poison|lanyard|hackathon\s+shirt)\b/.test(hay)
+    ) {
+      d -= 35;
+    }
+    if (/\b(dress|camp\s*shirt|linen|silk|sandal|midi|crop|palm)\b/.test(hay)) {
+      d += 28;
+    }
+    if (/\b(oversized|tee|treeblend)\b/.test(hay)) d += 18;
+    if (/\b(poplin|tailored|ballet\s*flat)\b/.test(hay)) d -= 8;
+    return d;
+  }
+
+  return 0;
+}
+
+function isGarmentNounQuery(q: string): boolean {
+  return /\b(shirt|tee|t-?shirts?|tshirts?|pants?|jeans|blouse|dress|poplin|trousers?|chinos?|tops?|skirts?|shorts?|jackets?|blazers?|coats?|hoodie|sweater|henley|hackathon|oversized)\b/i.test(
+    q,
+  );
+}
+
+function isAccessoryHay(hay: string): boolean {
+  return /\b(caps?|hats?|lanyards?|earrings?|anklets?|cuffs?|totes?|daypacks?|crossbody|shades|sunglasses|scar(?:f|ves)|bags?|backpacks?|wallets?)\b/.test(
+    hay,
+  );
+}
+
+/**
+ * Shirt/pants hunts must not rank caps, lanyards, or jewelry just because
+ * embeddings drifted toward "presentation" / "professional".
+ */
+function garmentQueryFitDelta(
+  product: SearchApiProduct,
+  q: QuarantinedSku,
+  queries: string[],
+): number {
+  const garmentQueries = queries.filter(isGarmentNounQuery);
+  if (!garmentQueries.length) return 0;
+
+  const title = rankTitle(product, q);
+  const hay = normalize(`${product.id} ${title} ${product.description || ""}`);
+  const role = apparelRole(title);
+
+  if (isAccessoryHay(hay)) return -1000;
+
+  let best = 0;
+  for (const gq of garmentQueries) {
+    const n = normalize(gq).replace(/tshirt/g, "tee");
+    if (n === "pant" || n === "pants") {
+      if (/\bpants?\b|\btrousers?\b|\bchinos?\b/.test(hay)) best = Math.max(best, 45);
+    } else if (n === "poplin") {
+      if (/\bpoplin\b/.test(hay)) best = Math.max(best, 55);
+      else if (/\bshirt\b/.test(hay)) best = Math.max(best, 18);
+    } else if (n === "jeans" || n === "jean") {
+      if (/\bjeans?\b/.test(hay)) best = Math.max(best, 45);
+    } else if (n === "shirt" || n === "blouse") {
+      if (/\b(shirts?|blouses?)\b/.test(hay)) best = Math.max(best, 40);
+    } else if (n === "tee" || n === "tees") {
+      if (/\b(tee|tshirt)\b/.test(hay)) best = Math.max(best, 40);
+    } else if (n.length >= 3 && hay.includes(n)) {
+      best = Math.max(best, 35);
+    }
+  }
+
+  if (best > 0) return best;
+
+  // Apparel without a noun hit — mild keep; pure "other" — drop
+  if (role === "top" || role === "bottom" || role === "outer") return -8;
+  return -1000;
 }
 
 function diversifyOutfitPicks(

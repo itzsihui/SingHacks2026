@@ -288,10 +288,15 @@ export function catalogResultMessage(
       return false;
     if (t === "hat" && /cap|hat/.test(hay)) return false;
     if (
-      (t === "pants" || t === "trousers" || t === "jeans" || t === "jean") &&
-      /pants|jeans|trousers|shorts|chino/.test(hay)
+      (t === "pants" ||
+        t === "pant" ||
+        t === "trousers" ||
+        t === "jeans" ||
+        t === "jean") &&
+      /pants?|jeans|trousers|shorts|chino/.test(hay)
     )
       return false;
+    if (t === "poplin" && /poplin|shirt/.test(hay)) return false;
     if (t === "blazer" && /blazer|jacket|coat/.test(hay)) return false;
     return !hay.includes(t);
   });

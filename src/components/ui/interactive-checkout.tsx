@@ -105,7 +105,7 @@ export function InteractiveCheckout({
                   <div className="relative size-14 shrink-0 overflow-hidden rounded-lg bg-muted sm:size-16">
                     <Image
                       src={product.image}
-                      alt={product.name}
+                      alt=""
                       fill
                       className="object-cover"
                       sizes="64px"
@@ -184,7 +184,7 @@ export function InteractiveCheckout({
                     <div className="relative size-11 shrink-0 overflow-hidden rounded-md bg-muted">
                       <Image
                         src={line.image}
-                        alt={line.name}
+                        alt=""
                         fill
                         className="object-cover"
                         sizes="44px"

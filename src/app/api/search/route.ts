@@ -23,7 +23,12 @@ export async function GET(request: Request) {
   const limitRaw = Number(url.searchParams.get("limit") || "8");
   const limit = Number.isFinite(limitRaw) ? limitRaw : 8;
 
-  if (!q) {
+  const listed = marketStores(await repo.listStores());
+  const origin = originFromRequest(request);
+  // Support repeated q=shirt&q=tee — one embed batch for multi-noun hunts
+  const queries = url.searchParams.getAll("q").map((s) => s.trim()).filter(Boolean);
+  const qList = queries.length ? queries : q ? [q] : [];
+  if (qList.length === 0) {
     return Response.json(
       {
         error: "missing_query",
@@ -33,11 +38,10 @@ export async function GET(request: Request) {
     );
   }
 
-  const listed = marketStores(await repo.listStores());
-  const origin = originFromRequest(request);
   const result = await semanticSearchMarket({
     products: flattenMarketProducts(listed),
-    query: q,
+    query: qList.join(" · "),
+    queries: qList,
     origin,
     limit,
   });

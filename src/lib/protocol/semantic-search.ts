@@ -133,15 +133,23 @@ function keywordHits(
 /**
  * Intent search over the live market catalog.
  * Uses OpenAI embeddings when available; otherwise keyword overlap.
+ * Pass `queries` to embed multiple intents in one round-trip and take max score.
  */
 export async function semanticSearchMarket(args: {
   products: MarketProduct[];
   query: string;
+  queries?: string[];
   origin: string;
   limit?: number;
 }): Promise<SemanticSearchResult> {
-  const query = args.query.trim();
+  const queries = (
+    args.queries?.length ? args.queries : [args.query]
+  )
+    .map((q) => q.trim())
+    .filter(Boolean);
+  const query = queries.join(" · ") || args.query.trim();
   const limit = Math.min(Math.max(args.limit ?? DEFAULT_LIMIT, 1), 24);
+
   if (!query) {
     return {
       query: "",
@@ -162,23 +170,53 @@ export async function semanticSearchMarket(args: {
   }
 
   const cache = await ensureCatalogVectors(args.products);
-  const [queryVec] = (await embedBatch([query])) ?? [];
+  const queryVecs = (await embedBatch(queries)) ?? [];
 
-  if (!cache || !queryVec) {
-    return keywordHits(args.products, query, args.origin, limit);
+  if (!cache || queryVecs.length === 0) {
+    // Keyword: merge hits across nouns
+    const byKey = new Map<string, { product: MarketProduct; score: number }>();
+    for (const q of queries) {
+      const hits = filterMarketProducts(args.products, q);
+      hits.forEach((p, i) => {
+        const key = `${p.storeSlug}:${p.id}`;
+        const score = 1 - i * 0.05;
+        const prev = byKey.get(key);
+        if (!prev || score > prev.score) byKey.set(key, { product: p, score });
+      });
+    }
+    const merged = [...byKey.values()]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+    if (merged.length === 0) {
+      return keywordHits(args.products, query, args.origin, limit);
+    }
+    return {
+      query,
+      mode: "keyword",
+      model: null,
+      productCount: merged.length,
+      products: withAgentUrls(
+        merged.map((m) => m.product),
+        args.origin,
+        merged.map((m) => m.score),
+      ),
+    };
   }
 
   const scored = args.products
-    .map((product, i) => ({
-      product,
-      score: cosine(queryVec, cache.vectors[i]!),
-    }))
+    .map((product, i) => {
+      let best = 0;
+      for (const qv of queryVecs) {
+        best = Math.max(best, cosine(qv, cache.vectors[i]!));
+      }
+      return { product, score: best };
+    })
     .filter((row) => row.score >= MIN_SCORE)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 
   if (scored.length === 0) {
-    return keywordHits(args.products, query, args.origin, limit);
+    return keywordHits(args.products, queries[0] || query, args.origin, limit);
   }
 
   return {

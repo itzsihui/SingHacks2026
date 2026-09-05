@@ -409,7 +409,13 @@ export default function BuyerPage() {
       const intent = query.trim();
       if (!intent) return;
 
-      const thoughtBullets = (opts?.thoughts || []).filter(Boolean);
+      const thoughtBullets = [
+        ...new Map(
+          (opts?.thoughts || [])
+            .filter(Boolean)
+            .map((t) => [t.trim().toLowerCase().replace(/\s+/g, " "), t.trim()]),
+        ).values(),
+      ];
       const queries = opts?.searchQueries?.length
         ? opts.searchQueries
         : [intent];
@@ -435,36 +441,7 @@ export default function BuyerPage() {
       setReceiptNote(null);
 
       try {
-        setState((prev) => ({
-          ...prev,
-          steps: updateStep(prev.steps, "parse", {
-            status: "active",
-            description: `Catalog hunt: “${intent}”`,
-            bullets: thoughtBullets.length ? thoughtBullets : undefined,
-          }),
-        }));
-        await sleep(200);
-
-        setState((prev) => ({
-          ...prev,
-          steps: updateStep(prev.steps, "parse", {
-            status: "complete",
-            description: thoughtBullets.length
-              ? "Salesperson intent → catalog terms"
-              : "Intent locked from salesperson chat",
-            bullets: thoughtBullets.length ? thoughtBullets : undefined,
-          }),
-        }));
-
-        setState((prev) => ({
-          ...prev,
-          steps: updateStep(prev.steps, "decompose", {
-            status: "active",
-            bullets: profileBullets(profile),
-          }),
-        }));
-        await sleep(220);
-
+        // Kick off catalog hunt immediately — don't wait on CoT theatrics
         const sizing = readBuyerAccount()?.sizing;
         const sizingLine = formatSizingSummary(sizing);
         const discoveryPromise = discoverFashionPicks(
@@ -473,8 +450,45 @@ export default function BuyerPage() {
           opts?.searchQueries,
           { excludeSkuIds: opts?.excludeSkuIds, sizing },
         );
-        await sleep(160);
-        const { picks, flagged, decomposed, storeSlugs } =
+
+        setState((prev) => ({
+          ...prev,
+          steps: updateStep(prev.steps, "parse", {
+            status: "active",
+            description: `Catalog hunt: “${intent}”`,
+            bullets: thoughtBullets.length ? thoughtBullets : undefined,
+          }),
+        }));
+        await sleep(40);
+
+        setState((prev) => ({
+          ...prev,
+          steps: updateStep(
+            updateStep(prev.steps, "parse", {
+              status: "complete",
+              description: thoughtBullets.length
+                ? "Salesperson intent → catalog terms"
+                : "Intent locked from salesperson chat",
+              bullets: thoughtBullets.length ? thoughtBullets : undefined,
+            }),
+            "decompose",
+            {
+              status: "active",
+              bullets: profileBullets(profile),
+            },
+          ),
+        }));
+        await sleep(40);
+
+        setState((prev) => ({
+          ...prev,
+          steps: updateStep(prev.steps, "search", {
+            status: "active",
+            description: "GET /api/search · ranking market catalog…",
+          }),
+        }));
+
+        const { picks, flagged, decomposed, storeSlugs, searchUrls } =
           await discoveryPromise;
 
         const flaggedMeta = flagged.map((f) => ({
@@ -490,82 +504,66 @@ export default function BuyerPage() {
           ...prev,
           flaggedSkus: flaggedMeta,
           lastSearchQueries: queries,
-          steps: updateStep(prev.steps, "decompose", {
-            status: "complete",
-            bullets: [
-              ...profileBullets(profile),
-              ...(sizingLine
-                ? [`Preferencing your fit: ${sizingLine}`]
-                : []),
-              ...(opts?.searchQueries?.length
-                ? [`Queries: ${opts.searchQueries.join(" · ")}`]
-                : []),
-              ...decomposed.constraints.filter(
-                (c) => !c.startsWith("Category:"),
-              ),
-            ],
-          }),
+          steps: updateStep(
+            updateStep(prev.steps, "decompose", {
+              status: "complete",
+              bullets: [
+                ...profileBullets(profile),
+                ...(sizingLine
+                  ? [`Preferencing your fit: ${sizingLine}`]
+                  : []),
+                ...(opts?.searchQueries?.length
+                  ? [`Queries: ${opts.searchQueries.join(" · ")}`]
+                  : []),
+                ...decomposed.constraints.filter(
+                  (c) => !c.startsWith("Category:"),
+                ),
+              ],
+            }),
+            "search",
+            {
+              status: "complete",
+              description:
+                storeSlugs.length > 0
+                  ? `Matched ${storeSlugs.length} seller store(s)`
+                  : "No store hits",
+              links: [
+                ...searchUrls.slice(0, 3).map((href) => ({
+                  label: href.length > 48 ? `${href.slice(0, 45)}…` : href,
+                  href,
+                })),
+                ...storeSlugs.slice(0, 4).map((slug) => ({
+                  label: `/s/${slug}/catalog.json`,
+                  href: `/s/${slug}/catalog.json`,
+                })),
+              ],
+            },
+          ),
         }));
+        await sleep(30);
 
         setState((prev) => ({
           ...prev,
-          steps: updateStep(prev.steps, "search", {
-            status: "active",
-            description: "GET /registry.json · matching seller catalogs…",
-          }),
+          steps: updateStep(
+            updateStep(prev.steps, "quarantine", {
+              status: "complete",
+              description:
+                flagged.length > 0
+                  ? `Encountered ${flagged.length} injection-shaped listing(s) while ranking — held out of fashion picks`
+                  : "No injection-shaped catalog copy matched this hunt",
+              bullets:
+                flagged.length > 0
+                  ? flagged.map((f) => `Flagged SKU: ${formatFlagSummary(f)}`)
+                  : ["Catalog copy treated as data only"],
+            }),
+            "rank",
+            {
+              status: "active",
+              description: "Scoring clean / typed catalog fields…",
+            },
+          ),
         }));
-        await sleep(180);
-
-        setState((prev) => ({
-          ...prev,
-          steps: updateStep(prev.steps, "search", {
-            status: "complete",
-            description:
-              storeSlugs.length > 0
-                ? `Matched ${storeSlugs.length} seller store(s)`
-                : "No store hits",
-            links: [
-              { label: "/registry.json", href: "/registry.json" },
-              ...storeSlugs.slice(0, 6).map((slug) => ({
-                label: `/s/${slug}/catalog.json`,
-                href: `/s/${slug}/catalog.json`,
-              })),
-            ],
-          }),
-        }));
-
-        setState((prev) => ({
-          ...prev,
-          steps: updateStep(prev.steps, "quarantine", {
-            status: "active",
-            description: "Q-reader scanning catalog copy (no tools)…",
-          }),
-        }));
-        await sleep(180);
-
-        setState((prev) => ({
-          ...prev,
-          steps: updateStep(prev.steps, "quarantine", {
-            status: "complete",
-            description:
-              flagged.length > 0
-                ? `Encountered ${flagged.length} injection-shaped listing(s) while ranking — held out of fashion picks`
-                : "No injection-shaped catalog copy matched this hunt",
-            bullets:
-              flagged.length > 0
-                ? flagged.map((f) => `Flagged SKU: ${formatFlagSummary(f)}`)
-                : ["Catalog copy treated as data only"],
-          }),
-        }));
-
-        setState((prev) => ({
-          ...prev,
-          steps: updateStep(prev.steps, "rank", {
-            status: "active",
-            description: "Scoring clean / typed catalog fields…",
-          }),
-        }));
-        await sleep(200);
+        await sleep(30);
 
         const resultText = catalogResultMessage(intent, picks, profile, {
           flaggedCount: flagged.length,
@@ -832,7 +830,16 @@ export default function BuyerPage() {
 
         const profile = data.profile ?? priorProfile;
         const ready = data.status === "ready" && Boolean(data.searchQuery);
-        const thoughtBullets = (data.thoughts || []).filter(Boolean);
+        const thoughtBullets = [
+          ...new Map(
+            (data.thoughts || [])
+              .filter(Boolean)
+              .map((t) => [
+                t.trim().toLowerCase().replace(/\s+/g, " "),
+                t.trim(),
+              ]),
+          ).values(),
+        ];
 
         const assistant: ChatMessage = {
           role: "assistant",

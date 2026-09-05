@@ -81,6 +81,14 @@ export function decomposeIntent(
   const constraints: string[] = ["Category: apparel / fashion"];
   if (opts?.occasion) {
     constraints.push(`Occasion: ${opts.occasion}`);
+    if (
+      opts.occasion === "work" ||
+      /\b(present|interview|office|meeting|formal|work)\b/i.test(opts.occasion)
+    ) {
+      constraints.push(
+        "Fit filter: prefer polished shirts/pants — exclude crop/tank/palm casual",
+      );
+    }
   }
   if (opts?.style) {
     constraints.push(`Style: ${opts.style}`);

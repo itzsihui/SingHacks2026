@@ -311,7 +311,7 @@ export function SalespersonChat({
                               <div className="relative size-20 shrink-0 bg-muted sm:size-24">
                                 <Image
                                   src={product.imageUrl}
-                                  alt={product.title}
+                                  alt=""
                                   fill
                                   className="object-cover"
                                   sizes="96px"
