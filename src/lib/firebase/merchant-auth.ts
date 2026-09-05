@@ -362,7 +362,8 @@ export async function clearMerchantOnboardingDraft(uid: string): Promise<void> {
 }
 
 export function merchantReceivingComplete(profile: MerchantProfile | null) {
-  return Boolean(profile?.walletAddress && profile?.visaReceive?.accountLabel);
+  // XRPL payTo can fall back to MERCHANT_ADDRESS env — Visa label is the hard gate.
+  return Boolean(profile?.visaReceive?.accountLabel);
 }
 
 /** Visa + crypto receive + governance saved at least once. */

@@ -58,8 +58,8 @@ export default function OnboardPage() {
   const boundWalletAddress = merchant.profile?.walletAddress ?? null;
   const visaReady = Boolean(merchant.profile?.visaReceive?.accountLabel);
   const visaReceive = merchant.profile?.visaReceive || undefined;
-  /** Setup already bound wallet + Visa — no seed prompt at publish. */
-  const railsReady = Boolean(boundWalletAddress) && visaReady;
+  /** Visa receive is required; XRPL payTo falls back to MERCHANT_ADDRESS env. */
+  const railsReady = visaReady;
 
   useEffect(() => {
     if (!merchant.ready) return;
@@ -528,12 +528,12 @@ export default function OnboardPage() {
       },
     ]);
 
-    if (!merchantAuth && !boundWalletAddress) {
+    if (!visaReady) {
       setLines((prev) => [
         ...prev,
         {
           role: "borneo",
-          text: "Bind your XRPL receiving address under Settings before publishing.",
+          text: "Finish Visa receive on Setup before publishing.",
         },
       ]);
       return;
