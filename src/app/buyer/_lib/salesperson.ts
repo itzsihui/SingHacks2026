@@ -35,13 +35,15 @@ You search LIVE seller catalogs later (registry + each store's products). Never 
 
 Think like a salesperson in a store:
 - Read the FULL conversation and fix obvious typos (presetn→presentation, profesional→professional, gona→gonna).
-- Occasion first. If they mention a date, dinner, night out, presentation, interview, etc. without naming garments, infer they may want a complementary look (top + bottoms). Ask ONE short question: full set vs a single piece — unless they already said set/outfit/look.
+- Meta / how-to first. If they ask how this works, what you do, or greet without naming clothes ("hi", "hello", "how does this work"), stay status "clarifying". Briefly explain the flow (chat → clarify → search live catalogs → pick → pay Visa/RLUSD) and ask what they want to wear. Do NOT invent an occasion or search.
+- Never treat the verb "work" in "how does this work" / "does it work" as a work/office outfit.
+- Occasion first (only when they actually describe dressing for something). If they mention a date, dinner, night out, presentation, interview, office, etc. without naming garments, infer they may want a complementary look (top + bottoms). Ask ONE short question: full set vs a single piece — unless they already said set/outfit/look.
 - Examples of the KIND of inference (do not copy wording):
   · "going on a date" → offer a date-night set, ask set vs one piece if unclear
-  · presentation / interview / office → polished shirt + pants (or blouse + trousers)
+  · presentation / interview / office / "outfit for work" → polished shirt + pants (or blouse + trousers)
   · "full outfit" / "a set" / "the look" → search complementary pieces, not one random SKU
   · clear single item ("a tee", "jeans") → search that item; do not over-ask
-- Prefer status "ready" once you know what to hunt. At most ONE clarifying question when the ask is occasion-only or truly vague.
+- Prefer status "ready" once you know what to hunt. At most ONE clarifying question when the ask is occasion-only or truly vague. Never go "ready" on greetings or product-flow questions.
 - When ready, set status "ready" and give SHORT catalog search strings (product nouns merchants would list — NOT the user's full sentence).
 - For sets: searchQuery like "shirt pants", searchQueries ["shirt","pants"] (or blouse/trousers). Include jeans as a pants hunt — merchants often title bottoms "Jeans" not "Pants".
 - thoughts: 2–5 short first-person reasoning lines about THIS request. Do NOT claim you already found products.
@@ -109,7 +111,10 @@ function detectItem(
     (/\bset\b/.test(t) &&
       /\b(date|dinner|night|look|wear|clothes|outfit)\b/.test(t)) ||
     (/\b(shirt|blouse|top)\b/.test(t) && /\b(pants?|trousers?|jeans)\b/.test(t)) ||
-    /\b(present(?:ation)?|interview|meeting|professional|formal|office)\b/.test(t)
+    /\b(present(?:ation)?|interview|meeting|professional|formal|office)\b/.test(
+      t,
+    ) ||
+    isWorkOutfitAsk(t)
   ) {
     return "outfit";
   }
@@ -119,10 +124,70 @@ function detectItem(
   return "unknown";
 }
 
+/** "for work" / workwear — not the verb in "how does this work". */
+function isWorkOutfitAsk(text: string): boolean {
+  const t = text.toLowerCase();
+  if (isMetaHelpAsk(t)) return false;
+  return (
+    /\bworkwear\b/.test(t) ||
+    /\b(?:for|to|at)\s+work\b/.test(t) ||
+    /\bwork\s+(?:outfit|clothes|wear|look|attire|event)\b/.test(t) ||
+    /\b(?:outfit|clothes|wear|look)\s+for\s+work\b/.test(t)
+  );
+}
+
+/** Greetings / product-flow questions — stay in guided chat, do not search. */
+function isMetaHelpAsk(text: string): boolean {
+  const t = normalizeQuestion(text);
+  if (!t) return false;
+
+  // Tolerate common typos: hwo/hoe → how
+  const fixed = t.replace(/\b(hwo|hoe|hw)\b/g, "how");
+
+  if (
+    /\bhow (?:does|do|is) (?:this|it|the(?:se)?|your) (?:work|app|agent|chat|flow)\b/.test(
+      fixed,
+    ) ||
+    /\b(?:does|did) (?:this|it) work\b/.test(fixed) ||
+    /\bhow (?:do i|to) (?:use|start|pay|buy|shop|search)\b/.test(fixed) ||
+    /\bwhat (?:is|does) (?:this|the) (?:agent|app|chat|buyer)\b/.test(fixed) ||
+    /\bexplain (?:this|how|the)\b/.test(fixed) ||
+    /^(?:help|what can you do|how does this work|how do i use this)$/.test(
+      fixed,
+    )
+  ) {
+    return true;
+  }
+
+  // Greeting alone, or greeting + how-it-works — not a fashion ask
+  if (
+    /^(hi|hey|hello|yo|sup|hiya|howdy)(?:\s|$)/.test(fixed) &&
+    !/\b(tee|tshirt|shirt|cap|hat|pants|jeans|outfit|dress|looking for)\b/.test(
+      fixed,
+    )
+  ) {
+    if (
+      /^(hi|hey|hello|yo|sup|hiya|howdy)$/.test(fixed) ||
+      /\bhow (?:does|do|is) (?:this|it)\b/.test(fixed) ||
+      /\b(?:does|did) (?:this|it) work\b/.test(fixed) ||
+      /\bwhat (?:is|does) (?:this|it)\b/.test(fixed) ||
+      /\bhelp\b/.test(fixed) ||
+      /\bexplain\b/.test(fixed)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function detectOccasion(text: string): string | undefined {
   const t = text.toLowerCase();
+  if (isMetaHelpAsk(t)) return undefined;
   if (/\b(date|dinner|night\s+out|going\s+out)\b/.test(t)) return "date";
-  if (/\b(present(?:ation)?|interview|meeting|office|work)\b/.test(t)) {
+  if (
+    /\b(present(?:ation)?|interview|meeting|office)\b/.test(t) ||
+    isWorkOutfitAsk(t)
+  ) {
     return "work";
   }
   return undefined;
@@ -130,7 +195,11 @@ function detectOccasion(text: string): string | undefined {
 
 function detectStyle(text: string): string | undefined {
   const t = text.toLowerCase();
-  if (/\b(professional|formal|office|present|interview|meeting)\b/.test(t)) {
+  if (isMetaHelpAsk(t)) return undefined;
+  if (
+    /\b(professional|formal|office|present|interview|meeting)\b/.test(t) ||
+    isWorkOutfitAsk(t)
+  ) {
     return "professional";
   }
   if (/\b(date|dinner|night\s+out)\b/.test(t)) return "date";
@@ -141,6 +210,16 @@ function detectStyle(text: string): string | undefined {
   if (/\bstreet\b/.test(t)) return "streetwear";
   return undefined;
 }
+
+const META_HELP_REPLY =
+  "You chat with me like a salesperson — tell me the occasion or piece you want, I clarify if needed, then I search live seller catalogs on Borneo. You pick what you like and pay in chat with Visa or RLUSD (nothing charges until you authorize). What are you looking to wear?";
+
+const META_HELP_SUGGESTIONS = [
+  "I want a t-shirt",
+  "Looking for a cap",
+  "Need a presentation outfit",
+  "Date-night set",
+];
 
 function wantsExplicitSet(text: string): boolean {
   const t = text.toLowerCase();
@@ -283,6 +362,7 @@ export function ensureConversationProgress(
 ): SalespersonResult {
   const turns = userTurnCount(messages);
   const corpus = corpusText(messages);
+  const latest = lastUser(messages);
   const item = detectItem(corpus);
   const profile = enrichProfile(messages, result.profile);
   const prevAsk = lastAssistant(messages);
@@ -296,6 +376,24 @@ export function ensureConversationProgress(
         normalizeQuestion(result.reply).includes("formal") &&
         normalizeQuestion(prevAsk).includes("casual") &&
         normalizeQuestion(prevAsk).includes("formal")));
+
+  // "how does this work" / bare hi — never jump to catalog search
+  if (isMetaHelpAsk(latest) || (turns === 1 && isMetaHelpAsk(corpus))) {
+    return {
+      ...result,
+      status: "clarifying",
+      searchQuery: undefined,
+      searchQueries: undefined,
+      reply: META_HELP_REPLY,
+      suggestions: META_HELP_SUGGESTIONS,
+      thoughts: [
+        "They asked how the buyer flow works — not for a specific garment yet.",
+        "Explain chat → clarify → search catalogs → pay, then ask what they want.",
+      ],
+      profile: { category: "fashion" },
+      llm: result.llm,
+    };
+  }
 
   const forceReady = () => {
     const catalog = catalogSearchFromProfile(messages, profile);
@@ -454,6 +552,19 @@ export function runDeterministicSalesperson(
       ],
       status: "clarifying",
       profile,
+      llm: "deterministic",
+    };
+  }
+
+  if (isMetaHelpAsk(latest) || (turns === 1 && isMetaHelpAsk(corpusText(messages)))) {
+    return {
+      reply: META_HELP_REPLY,
+      suggestions: META_HELP_SUGGESTIONS,
+      status: "clarifying",
+      thoughts: [
+        "They asked how this works — keep it conversational, no catalog hunt yet.",
+      ],
+      profile: { category: "fashion" },
       llm: "deterministic",
     };
   }

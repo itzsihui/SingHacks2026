@@ -79,6 +79,9 @@ export function renderRegistryJson(stores: StoreRecord[], origin: string) {
     endpoints: {
       llmsTxt: `${origin}/llms.txt`,
       registry: `${origin}/registry.json`,
+      /** Intent search — returns ranked products, not this registry. */
+      search: `${origin}/api/search`,
+      marketApi: `${origin}/api/market`,
     },
     storeCount: listed.length,
     stores: listed,
@@ -95,9 +98,10 @@ export function renderRootLlmsTxt(stores: StoreRecord[], origin: string) {
     `> Do not scrape HTML. Do not invent checkout pages.`,
     ``,
     `## How to buy`,
-    `1. Pick a store below (or search titles in registry.json).`,
-    `2. GET that store's llms.txt and catalog.json.`,
-    `3. POST /buy (expect HTTP 402) or StraitsX /checkout.`,
+    `1. Prefer intent search: GET ${origin}/api/search?q=your+need (ranked products).`,
+    `2. Or pick a store below / scan titles in registry.json.`,
+    `3. GET that store's llms.txt and catalog.json.`,
+    `4. POST /buy (expect HTTP 402) or StraitsX /checkout.`,
     ``,
     `## Network index (${listed.length} store${listed.length === 1 ? "" : "s"})`,
     ``,
@@ -122,6 +126,8 @@ export function renderRootLlmsTxt(stores: StoreRecord[], origin: string) {
 
   lines.push(`## Machine index`);
   lines.push(`- JSON registry: ${origin}/registry.json`);
+  lines.push(`- Semantic search: ${origin}/api/search?q=`);
+  lines.push(`- Keyword market API: ${origin}/api/market?q=`);
   lines.push(`- Human marketplace: ${origin}/market`);
   lines.push(``);
   lines.push(`## Currency`);
