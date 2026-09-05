@@ -225,7 +225,10 @@ async function resolvePayTo(
 ): Promise<ClassicAddress | null> {
   const signed = await verifyMerchantAuth(merchantAuth);
   if (signed) return signed;
-  return parseMerchantAddress(boundWalletAddress ?? undefined);
+  const bound = parseMerchantAddress(boundWalletAddress ?? undefined);
+  if (bound) return bound;
+  // Demo / prod fallback: MERCHANT_ADDRESS from env (no per-merchant seed required)
+  return parseMerchantAddress(config.merchantAddress);
 }
 
 async function publishStore(

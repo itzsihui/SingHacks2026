@@ -105,10 +105,6 @@ export default function MerchantSetupPage() {
       setError("Enable at least one payment rail (RLUSD or Visa)");
       return;
     }
-    if (!wallet) {
-      setError("Bind your XRPL receiving address before continuing");
-      return;
-    }
     setBusy(true);
     setError(null);
     setMessage(null);
@@ -221,9 +217,10 @@ export default function MerchantSetupPage() {
         <section className="space-y-3">
           <h2 className="text-sm font-medium">1. XRPL receiving address</h2>
           <p className="text-xs text-foreground/55">
-            RLUSD / x402 settlements land here (XRPL Testnet classic r…
-            address). Paste a family seed to prove ownership — the seed stays in
-            your browser.
+            Optional for the demo — skip to use{" "}
+            <code className="text-[11px]">MERCHANT_ADDRESS</code> from server
+            env. Bind a family seed only if you want payouts to your own XRPL
+            Testnet wallet (seed stays in the browser).
           </p>
           {wallet ? (
             <p className="font-mono text-sm">
