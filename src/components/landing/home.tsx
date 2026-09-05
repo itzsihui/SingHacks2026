@@ -9,9 +9,11 @@ import {
   ShieldCheckIcon,
   StorefrontIcon,
 } from "@phosphor-icons/react";
+import { LandingCompareFlow } from "@/components/landing/compare-flow";
 import { LandingLenis } from "@/components/landing/lenis-root";
 import { MetalHumanStage } from "@/components/landing/metal-human-stage";
 import { LandingPitch } from "@/components/landing/pitch";
+import { LandingProblemImpact } from "@/components/landing/problem-impact";
 import { Reveal } from "@/components/landing/reveal";
 import { TracingBeam } from "@/components/ui/tracing-beam";
 import { cn } from "@/lib/utils";
@@ -32,10 +34,10 @@ const TURNS = [
     who: "Agent",
     text: "Pulled an Oxford Shirt and Selvedge Jeans across sellers. Tap a card when you're ready.",
   },
-  { who: "You", text: "Pay with Visa." },
+  { who: "You", text: "Pay with RLUSD." },
   {
     who: "Agent",
-    text: "Scoped Visa card ready. I will not charge until you authorize.",
+    text: "x402 quote ready. I will not settle until you authorize.",
   },
 ];
 
@@ -43,7 +45,7 @@ const MERCHANT = [
   {
     title: "Talk the catalog",
     body: "Type inventory, drop a CSV, or paste a store URL. No admin form marathon.",
-    mono: "50 shirts · size M · Visa receive on",
+    mono: "50 shirts · size M · wallet bound",
   },
   {
     title: "Connect what you already have",
@@ -52,8 +54,8 @@ const MERCHANT = [
   },
   {
     title: "Go live for agents and people",
-    body: "Published store sits on the market. Agents read the catalog as text, not HTML.",
-    mono: "GET /s/{slug}/llms.txt",
+    body: "Published store sits on the open registry. Any HTTP agent can search and buy — not only ChatGPT or Claude.",
+    mono: "GET /registry.json · GET /api/search",
   },
 ];
 
@@ -109,16 +111,16 @@ export function LandingHome() {
             </Link>
             <nav className="flex items-center gap-5 text-sm text-[var(--landing-fog)]/70">
               <Link
-                href="/buyer/login"
-                className="hover:text-[var(--landing-fog)]"
-              >
-                Shop
-              </Link>
-              <Link
                 href="/merchant/login"
                 className="hover:text-[var(--landing-fog)]"
               >
                 Sell
+              </Link>
+              <Link
+                href="/buyer/login"
+                className="hover:text-[var(--landing-fog)]"
+              >
+                Shop
               </Link>
             </nav>
           </header>
@@ -130,17 +132,16 @@ export function LandingHome() {
                   "landing-rise font-[family-name:var(--font-syne)] text-[clamp(2rem,5vw,3.5rem)] font-semibold leading-[1.12] tracking-tight text-[var(--landing-fog)] pb-1",
                 )}
               >
-                Merchants go agent-ready. Buyers shop in chat. Borneo connects
-                both.
+                Go agent-ready. Publish once. Any agent can shop you.
               </h1>
               <p
                 className={cn(
-                  "landing-rise landing-rise-delay-1 mt-4 max-w-[40ch] text-base leading-relaxed text-[var(--landing-fog)]/70",
+                  "landing-rise landing-rise-delay-1 mt-4 max-w-[42ch] text-base leading-relaxed text-[var(--landing-fog)]/70",
                 )}
               >
-                Sellers publish machine-readable stores. Shoppers discover and
-                check out with Visa — stablecoin when they want it. Pick how
-                you enter below.
+                Talk your catalog live — open registry and /api/search, not
+                locked inside ChatGPT or Claude. Buyers settle RLUSD in chat via
+                x402. Start as a seller below.
               </p>
             </div>
           </main>
@@ -156,41 +157,45 @@ export function LandingHome() {
           />
           <div className="relative mx-auto grid max-w-[1100px] gap-4 sm:grid-cols-2 sm:gap-6">
             <Link
-              href="/buyer/login"
-              className="group block rounded-md border border-white/12 bg-black/30 px-6 py-8 transition-colors hover:border-[var(--landing-jade)]/50 hover:bg-black/45"
-            >
-              <h2 className="font-[family-name:var(--font-syne)] text-2xl font-semibold tracking-tight text-[var(--landing-fog)]">
-                Log in as buyer
-              </h2>
-              <p className="mt-2 max-w-[36ch] text-sm leading-relaxed text-[var(--landing-fog)]/60">
-                Fashion agent discovers, compares, and pays — Visa-scoped card
-                first, RLUSD when you want on-chain settle.
-              </p>
-              <span className="mt-6 inline-flex text-sm font-medium text-[var(--landing-jade)] group-hover:underline">
-                Continue to Shop
-              </span>
-            </Link>
-            <Link
               href="/merchant/login"
-              className="group block rounded-md border border-white/12 bg-black/30 px-6 py-8 transition-colors hover:border-[var(--landing-jade)]/50 hover:bg-black/45"
+              className="group block rounded-md border border-[var(--landing-jade)]/40 bg-black/30 px-6 py-8 transition-colors hover:border-[var(--landing-jade)]/60 hover:bg-black/45 sm:order-1"
             >
               <h2 className="font-[family-name:var(--font-syne)] text-2xl font-semibold tracking-tight text-[var(--landing-fog)]">
                 Log in as seller
               </h2>
               <p className="mt-2 max-w-[36ch] text-sm leading-relaxed text-[var(--landing-fog)]/60">
-                Bind Visa receive and a wallet, publish products, watch orders
-                in Ops.
+                Bind a wallet, publish to the open registry — shoppable by every
+                agent, not two chat apps.
               </p>
               <span className="mt-6 inline-flex text-sm font-medium text-[var(--landing-jade)] group-hover:underline">
                 Continue to Sell
               </span>
             </Link>
+            <Link
+              href="/buyer/login"
+              className="group block rounded-md border border-white/12 bg-black/30 px-6 py-8 transition-colors hover:border-[var(--landing-jade)]/50 hover:bg-black/45 sm:order-2"
+            >
+              <h2 className="font-[family-name:var(--font-syne)] text-2xl font-semibold tracking-tight text-[var(--landing-fog)]">
+                Log in as buyer
+              </h2>
+              <p className="mt-2 max-w-[36ch] text-sm leading-relaxed text-[var(--landing-fog)]/60">
+                Ranks via /api/search — same endpoint agents use — then settles
+                RLUSD on XRPL after you authorize.
+              </p>
+              <span className="mt-6 inline-flex text-sm font-medium text-[var(--landing-jade)] group-hover:underline">
+                Continue to Shop
+              </span>
+            </Link>
           </div>
         </section>
 
+        <LandingProblemImpact />
+
+        <LandingCompareFlow />
+
         <section
-          aria-label="The pitch"
-          className="relative overflow-hidden bg-[#050708] px-6 py-24 md:px-10 md:py-32"
+          aria-label="Try the flows"
+          className="relative overflow-hidden border-t border-white/10 bg-[#050708] px-6 py-24 md:px-10 md:py-32"
         >
           <div
             className="landing-grain pointer-events-none absolute inset-0 opacity-30"
@@ -198,6 +203,56 @@ export function LandingHome() {
           />
           <div className="relative">
             <LandingPitch />
+          </div>
+        </section>
+
+        <section
+          aria-label="Merchant access"
+          className="relative overflow-hidden border-t border-white/10 bg-[#050708] px-6 py-24 md:px-10 md:py-32"
+        >
+          <div
+            className="landing-grain pointer-events-none absolute inset-0 opacity-40"
+            aria-hidden
+          />
+          <div className="relative mx-auto max-w-[1100px]">
+            <Reveal className="mb-16 max-w-xl md:mb-20">
+              <StorefrontIcon
+                className="size-7 text-[var(--landing-jade)]"
+                weight="regular"
+                aria-hidden
+              />
+              <h2 className="mt-5 font-[family-name:var(--font-syne)] text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-tight text-[var(--landing-fog)]">
+                Any merchant goes live by talking.
+              </h2>
+              <p className="mt-3 max-w-[48ch] text-[var(--landing-fog)]/55">
+                No-code for a single shop. The same chat for a retailer with
+                many locations. Upload a catalog, connect an API, or just type.
+              </p>
+            </Reveal>
+
+            <TracingBeam className="max-w-3xl px-2 md:px-4">
+              <div className="ml-2 flex flex-col gap-20 pb-8 pt-2 md:ml-6 md:gap-24">
+                {MERCHANT.map((step) => (
+                  <article key={step.title}>
+                    <h3 className="font-[family-name:var(--font-syne)] text-[clamp(1.4rem,3vw,2rem)] font-semibold leading-[1.12] tracking-tight text-[var(--landing-fog)]">
+                      {step.title}
+                    </h3>
+                    <p className="mt-3 max-w-[40ch] text-base leading-relaxed text-[var(--landing-fog)]/55">
+                      {step.body}
+                    </p>
+                    <pre className="landing-code-panel mt-6 overflow-x-auto rounded-md border border-white/10 bg-[oklch(0.12_0.015_160_/_0.85)] px-5 py-4 font-mono text-sm text-[var(--landing-ember)]">
+                      <code>{step.mono}</code>
+                    </pre>
+                  </article>
+                ))}
+              </div>
+            </TracingBeam>
+
+            <Reveal className="mt-14">
+              <Link href="/merchant/login" className={btnPrimary}>
+                I want to sell
+              </Link>
+            </Reveal>
           </div>
         </section>
 
@@ -219,10 +274,10 @@ export function LandingHome() {
               <h2 className="mt-5 max-w-[14ch] font-[family-name:var(--font-syne)] text-[clamp(1.75rem,4vw,2.75rem)] font-semibold leading-[1.1] tracking-tight text-[var(--landing-fog)]">
                 Fashion agent. Discovers, compares, decides.
               </h2>
-              <p className="mt-4 max-w-[42ch] text-base leading-relaxed text-[var(--landing-fog)]/60">
-                Occasion-aware personal shopper — date night, set vs one piece —
-                then ranks live catalog SKUs. Checkout stays in chat: Visa
-                first, stablecoin as a second rail.
+              <p className="mt-4 max-w-[44ch] text-base leading-relaxed text-[var(--landing-fog)]/60">
+                Occasion-aware shopper — then ranks via protocol search, not
+                HTML scrape or a walled agent store. Checkout stays in chat:
+                authorize once, settle RLUSD via x402.
               </p>
               <Link href="/buyer/login" className={cn(btnPrimary, "mt-8")}>
                 I want to shop
@@ -279,56 +334,6 @@ export function LandingHome() {
         </section>
 
         <section
-          aria-label="Merchant access"
-          className="relative overflow-hidden border-t border-white/10 bg-[#050708] px-6 py-24 md:px-10 md:py-32"
-        >
-          <div
-            className="landing-grain pointer-events-none absolute inset-0 opacity-40"
-            aria-hidden
-          />
-          <div className="relative mx-auto max-w-[1100px]">
-            <Reveal className="mb-16 max-w-xl md:mb-20">
-              <StorefrontIcon
-                className="size-7 text-[var(--landing-jade)]"
-                weight="regular"
-                aria-hidden
-              />
-              <h2 className="mt-5 font-[family-name:var(--font-syne)] text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-tight text-[var(--landing-fog)]">
-                Any merchant goes live by talking.
-              </h2>
-              <p className="mt-3 max-w-[48ch] text-[var(--landing-fog)]/55">
-                No-code for a single shop. The same chat for a retailer with
-                many locations. Upload a catalog, connect an API, or just type.
-              </p>
-            </Reveal>
-
-            <TracingBeam className="max-w-3xl px-2 md:px-4">
-              <div className="ml-2 flex flex-col gap-20 pb-8 pt-2 md:ml-6 md:gap-24">
-                {MERCHANT.map((step) => (
-                  <article key={step.title}>
-                    <h3 className="font-[family-name:var(--font-syne)] text-[clamp(1.4rem,3vw,2rem)] font-semibold leading-[1.12] tracking-tight text-[var(--landing-fog)]">
-                      {step.title}
-                    </h3>
-                    <p className="mt-3 max-w-[40ch] text-base leading-relaxed text-[var(--landing-fog)]/55">
-                      {step.body}
-                    </p>
-                    <pre className="landing-code-panel mt-6 overflow-x-auto rounded-md border border-white/10 bg-[oklch(0.12_0.015_160_/_0.85)] px-5 py-4 font-mono text-sm text-[var(--landing-ember)]">
-                      <code>{step.mono}</code>
-                    </pre>
-                  </article>
-                ))}
-              </div>
-            </TracingBeam>
-
-            <Reveal className="mt-14">
-              <Link href="/merchant/login" className={btnPrimary}>
-                I want to sell
-              </Link>
-            </Reveal>
-          </div>
-        </section>
-
-        <section
           aria-label="In-conversation payment"
           className="relative border-t border-white/10 bg-[#070a0c] px-6 py-24 md:px-10 md:py-32"
         >
@@ -348,27 +353,26 @@ export function LandingHome() {
                 aria-hidden
               />
               <h2 className="mt-5 max-w-[16ch] font-[family-name:var(--font-syne)] text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-tight text-[var(--landing-fog)]">
-                Visa checkout stays inside the chat.
+                RLUSD settle stays inside the chat.
               </h2>
               <p className="mt-3 max-w-[46ch] text-[var(--landing-fog)]/55">
-                Scoped Visa card in the conversation — no redirect, no extra
-                tab. The agent charges only after you authorize. RLUSD on XRPL is
-                the second rail when you want on-chain settle.
+                HTTP 402 / x402 on XRPL — no redirect checkout tab. The agent
+                only settles after you authorize. Locked quote: payee, amount,
+                and SKU cannot be rewritten by catalog copy.
               </p>
             </Reveal>
 
             <div className="mt-14 grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)]">
               <Reveal className="rounded-md border border-[var(--landing-jade)]/35 bg-[oklch(0.18_0.04_160_/_0.45)] p-7 md:p-9">
                 <p className="font-[family-name:var(--font-syne)] text-2xl font-semibold text-[var(--landing-fog)]">
-                  Visa card, agent-authorized
+                  x402, agent-ready
                 </p>
                 <p className="mt-3 max-w-[46ch] text-sm leading-relaxed text-[var(--landing-fog)]/65">
-                  Issue a spend-capped virtual card in the conversation, lock it
-                  to the merchant, complete pay, then burn the mandate. Shoppers
-                  never leave the chat.
+                  Challenge → authorize → settle RLUSD to the merchant wallet.
+                  Same path for the fashion chat and any external HTTP agent.
                 </p>
                 <p className="mt-6 font-mono text-xs leading-relaxed text-[var(--landing-jade)]">
-                  Spend cap, merchant lock, 15 min TTL, then burn.
+                  402 → PAYMENT-SIGNATURE → 200
                 </p>
               </Reveal>
               <Reveal
@@ -376,14 +380,14 @@ export function LandingHome() {
                 className="rounded-md border border-white/10 bg-black/25 p-7 md:p-9"
               >
                 <p className="font-[family-name:var(--font-syne)] text-xl font-semibold text-[var(--landing-fog)]">
-                  Visa-powered stablecoin
+                  RLUSD on XRPL
                 </p>
                 <p className="mt-3 text-sm leading-relaxed text-[var(--landing-fog)]/55">
-                  Same chat, second rail: RLUSD on XRPL via HTTP 402 / x402.
-                  Fiat leads; on-chain settle is opt-in.
+                  Stablecoin settle on testnet — exact amount, locked payTo,
+                  explorer receipt after success.
                 </p>
                 <p className="mt-6 font-mono text-xs text-[var(--landing-ember)]">
-                  402 → transfer → 200
+                  POST /s/{"{slug}"}/buy
                 </p>
               </Reveal>
             </div>
@@ -452,20 +456,19 @@ export function LandingHome() {
                 <div>
                   <dt className="text-[var(--landing-fog)]/45">Amount</dt>
                   <dd className="mt-1 text-[var(--landing-fog)]">
-                    Spend-capped Visa mandate
+                    0.01 RLUSD
                   </dd>
                 </div>
                 <div>
                   <dt className="text-[var(--landing-fog)]/45">Rail</dt>
                   <dd className="mt-1 text-[var(--landing-fog)]">
-                    Visa, agent-authorized card
+                    RLUSD · x402 on XRPL
                   </dd>
                 </div>
               </dl>
               <p className="mt-6 max-w-[36ch] text-[13px] leading-relaxed text-[var(--landing-fog)]/55">
-                Spend capped. Merchant locked. Mandate lasts about 15 minutes,
-                then burns. Confirm once in the agent — or settle RLUSD on XRPL
-                as the second rail.
+                Quote locked at authorize. PayTo and amount cannot change from
+                catalog text. Confirm once — then settle on the ledger.
               </p>
               <Link href="/buyer/login" className={cn(btnPrimary, "mt-8")}>
                 I want to shop
@@ -485,24 +488,31 @@ export function LandingHome() {
             <div className="mt-10 max-w-3xl space-y-8">
               <p className="text-base leading-relaxed text-[var(--landing-fog)]/65">
                 <span className="font-[family-name:var(--font-syne)] text-[var(--landing-fog)]">
-                  Agents.{" "}
+                  Search.{" "}
                 </span>
-                Fashion buyer and merchant chat on OpenAI, with deterministic
-                tools if the model is offline.
+                Intent ranking over the live market via{" "}
+                <span className="font-mono text-sm text-[var(--landing-ember)]">
+                  GET /api/search
+                </span>{" "}
+                — humans in the buyer chat and external agents share one path.
               </p>
               <p className="text-base leading-relaxed text-[var(--landing-fog)]/65">
                 <span className="font-[family-name:var(--font-syne)] text-[var(--landing-fog)]">
-                  Payments.{" "}
+                  Open protocol.{" "}
                 </span>
-                Visa-scoped card in chat first, plus RLUSD x402 on XRPL when you
-                want on-chain settle. Both wait on explicit consent.
+                Registry and store{" "}
+                <span className="font-mono text-sm text-[var(--landing-ember)]">
+                  llms.txt
+                </span>{" "}
+                are HTTP, not app-gated. Procurement, local, and personal agents
+                are first-class.
               </p>
               <p className="text-base leading-relaxed text-[var(--landing-fog)]/65">
                 <span className="font-[family-name:var(--font-syne)] text-[var(--landing-fog)]">
-                  Onboarding.{" "}
+                  Settle.{" "}
                 </span>
-                One conversation publishes a storefront agents can already shop.
-                SME or multi-location, same door.
+                RLUSD via HTTP 402 / x402 on XRPL. Waits on explicit authorize —
+                catalog copy cannot retarget pay.
               </p>
             </div>
           </Reveal>
@@ -531,19 +541,19 @@ export function LandingHome() {
             <p className="landing-brand text-[clamp(3.5rem,12vw,8rem)] text-[var(--landing-fog)]">
               Borneo
             </p>
-            <p className="mt-6 max-w-[34ch] text-base text-[var(--landing-fog)]/65 md:text-lg">
-              Merchants go agent-ready. Buyers shop in chat. Two doors —
-              separate accounts. Pick one path.
+            <p className="mt-6 max-w-[36ch] text-base text-[var(--landing-fog)]/65 md:text-lg">
+              Publish once for every agent. Sell first — shoppers follow. Two
+              doors, separate accounts.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
-              <Link href="/buyer/login" className={cn(btnPrimary, "h-12 px-6")}>
-                I want to shop
-              </Link>
               <Link
                 href="/merchant/login"
-                className={cn(btnGhost, "h-12 px-6")}
+                className={cn(btnPrimary, "h-12 px-6")}
               >
                 I want to sell
+              </Link>
+              <Link href="/buyer/login" className={cn(btnGhost, "h-12 px-6")}>
+                I want to shop
               </Link>
             </div>
           </Reveal>
@@ -556,16 +566,16 @@ export function LandingHome() {
             </span>
             <div className="flex flex-wrap items-center gap-6">
               <Link
-                href="/buyer/login"
-                className="hover:text-[var(--landing-fog)]/70"
-              >
-                Shop
-              </Link>
-              <Link
                 href="/merchant/login"
                 className="hover:text-[var(--landing-fog)]/70"
               >
                 Sell
+              </Link>
+              <Link
+                href="/buyer/login"
+                className="hover:text-[var(--landing-fog)]/70"
+              >
+                Shop
               </Link>
               <a
                 href="https://getlayers.ai"

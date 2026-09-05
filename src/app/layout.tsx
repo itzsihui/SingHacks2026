@@ -21,9 +21,9 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "Borneo | Discover, decide, pay in one chat",
+  title: "Borneo | Open agent storefronts",
   description:
-    "Fashion buyer agent for shoppers. No-code storefront chat for merchants. Catalog text cannot change payee, amount, or skip authorize. Visa and RLUSD stay in the conversation.",
+    "Agent-ready stores open to any HTTP agent — not locked to ChatGPT or Claude. Shoppers discover via /api/search and settle RLUSD in chat via x402. Catalog text cannot change payee, amount, or skip authorize.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
