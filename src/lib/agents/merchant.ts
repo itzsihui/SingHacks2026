@@ -78,10 +78,9 @@ export async function runMerchantAgent(args: {
     };
   }
 
-  // Priced catalog ready — publish using setup-bound wallet or session proof
+  // Priced catalog ready — publish (payTo = shared MERCHANT_ADDRESS env)
   if (
     draft &&
-    (merchantAuth || args.boundWalletAddress) &&
     draft.lines.every((l) => l.price) &&
     !args.message?.trim() &&
     !args.csv?.trim() &&
