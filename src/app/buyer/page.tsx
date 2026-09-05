@@ -964,7 +964,6 @@ export default function BuyerPage() {
         ],
       }));
 
-      const paidTitles: string[] = [];
       const links: Array<{ label: string; href: string }> = [];
 
       try {
@@ -1094,11 +1093,6 @@ export default function BuyerPage() {
               setCardIssued(true);
             }
           }
-          paidTitles.push(
-            line.quantity > 1
-              ? `${line.quantity}× ${line.title}`
-              : line.title,
-          );
         }
 
         setReceiptNote(null);
@@ -1115,10 +1109,16 @@ export default function BuyerPage() {
             ...prev.messages,
             {
               role: "assistant",
-              content: `Purchase complete for ${paidTitles.join(", ")} via ${
-                rail === "visa" ? "Visa card" : "RLUSD / x402"
-              }. Each line used a locked settle quote.`,
-              links: links.length ? links.slice(0, 4) : undefined,
+              content: "Purchase complete.",
+              links: links.length
+                ? links.slice(0, 4).map((l, i) => ({
+                    label:
+                      links.length === 1
+                        ? "View transaction on ledger"
+                        : `View transaction on ledger (${i + 1})`,
+                    href: l.href,
+                  }))
+                : undefined,
             },
           ],
           steps: updateStep(prev.steps, "settle", {
