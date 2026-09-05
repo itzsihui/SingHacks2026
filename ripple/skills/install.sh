@@ -36,5 +36,6 @@ done
 echo ""
 echo "installed $installed skill(s) into: ${TARGETS[*]}"
 echo "Cursor also reads .claude/skills and .codex/skills, so it is covered as well."
-echo "Next: invoke /xrpl-agentic-resources in your agent, or run its refresh once:"
+echo "Next: invoke /borneo-registry-shop to browse + buy on the public registry,"
+echo "or /xrpl-agentic-resources (refresh once if needed):"
 echo "  bash skills/xrpl-agentic-resources/scripts/refresh.sh"
